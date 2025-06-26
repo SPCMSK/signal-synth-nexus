@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { CircuitBoard, Signal, Waves, Circle, Square } from 'lucide-react';
+import { CircuitBoard, Signal, Waves, Circle, Square, History } from 'lucide-react';
 import { ConfigPanel } from '@/components/ConfigPanel';
 import { SignalVisualization } from '@/components/SignalVisualization';
 import { ConstellationDiagram } from '@/components/ConstellationDiagram';
@@ -16,6 +16,7 @@ import { ExportPanel } from '@/components/ExportPanel';
 import { DocumentationPanel } from '@/components/DocumentationPanel';
 import { Header } from '@/components/Header';
 import { useSignalProcessor } from '@/hooks/useSignalProcessor';
+import { useSimulationHistory } from '@/hooks/useSimulationHistory';
 
 const Index = () => {
   const [config, setConfig] = useState({
@@ -25,7 +26,7 @@ const Index = () => {
     carrierAmplitude: 1,
     snrDb: 10,
     noiseEnabled: false,
-    dataLength: 4  // Valor más pequeño por defecto
+    dataLength: 4
   });
 
   const [isSimulating, setIsSimulating] = useState(false);
@@ -41,17 +42,37 @@ const Index = () => {
     isProcessing 
   } = useSignalProcessor();
 
+  const {
+    simulations,
+    addSimulation,
+    clearHistory,
+    totalSimulations
+  } = useSimulationHistory();
+
   const handleSimulate = useCallback(async () => {
     console.log('Simulate button clicked with config:', config);
     setIsSimulating(true);
     try {
       await processSignal(config);
+      
+      // Esperar a que el procesamiento termine y luego guardar en historial
+      setTimeout(() => {
+        if (digitalSignal && modulatedSignal && ber) {
+          addSimulation(config, {
+            digitalSignal,
+            modulatedSignal,
+            demodulatedSignal,
+            constellationData,
+            ber
+          });
+        }
+      }, 100);
     } catch (error) {
       console.error('Simulation error:', error);
     } finally {
       setIsSimulating(false);
     }
-  }, [config, processSignal]);
+  }, [config, processSignal, digitalSignal, modulatedSignal, demodulatedSignal, constellationData, ber, addSimulation]);
 
   const handleConfigChange = useCallback((newConfig: typeof config) => {
     console.log('Config changed:', newConfig);
@@ -78,9 +99,24 @@ const Index = () => {
               <CircuitBoard className="w-3 h-3 mr-1" />
               SNR: {config.snrDb} dB
             </Badge>
+            {totalSimulations > 0 && (
+              <Badge variant="outline" className="border-tech-orange text-tech-orange">
+                <History className="w-3 h-3 mr-1" />
+                {totalSimulations} simulaciones
+              </Badge>
+            )}
           </div>
           
           <div className="flex items-center space-x-2">
+            {totalSimulations > 0 && (
+              <Button
+                onClick={clearHistory}
+                variant="outline"
+                className="border-destructive text-destructive hover:bg-destructive/10"
+              >
+                Limpiar Historial
+              </Button>
+            )}
             <Button
               onClick={() => setShowDocumentation(!showDocumentation)}
               variant="outline"
@@ -135,12 +171,15 @@ const Index = () => {
             />
             
             <ExportPanel
-              digitalSignal={digitalSignal}
-              modulatedSignal={modulatedSignal}
-              demodulatedSignal={demodulatedSignal}
-              constellationData={constellationData}
-              config={config}
-              ber={ber}
+              currentSimulation={{
+                digitalSignal,
+                modulatedSignal,
+                demodulatedSignal,
+                constellationData,
+                config,
+                ber
+              }}
+              simulationHistory={simulations}
             />
           </div>
         </div>
