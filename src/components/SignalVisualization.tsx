@@ -70,31 +70,42 @@ export const SignalVisualization = ({
   };
 
   // Dibuja la señal y ejes
-  const drawSignal = (canvas: HTMLCanvasElement, data: SignalData, color: string) => {
+  const drawSignal = (canvas: HTMLCanvasElement, data: SignalData | null, color: string, forceCarrier?: boolean) => {
     const ctx = canvas.getContext('2d');
-    if (!ctx || !data.time.length) return;
+    if (!ctx) return;
     const width = canvas.width;
     const height = canvas.height;
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
     ctx.fillRect(0, 0, width, height);
-    // Rango de datos
-    let minX = Math.min(...data.time);
-    let maxX = Math.max(...data.time);
-    let minY = Math.min(...data.amplitude);
-    let maxY = Math.max(...data.amplitude);
-    // Si la señal es la portadora y tiene pocos puntos, genera una onda artificial para mostrar
-    if (data.label === 'Portadora' && data.time.length < 100) {
+    // Si es portadora y no hay datos o pocos puntos, dibuja onda artificial SIEMPRE
+    if ((forceCarrier || (data && data.label === 'Portadora' && data.time.length < 4)) || (!data && forceCarrier)) {
       const cycles = 2;
       const points = 1000;
       const freq = 1000; // 1 kHz visible
       const amp = 1;
       const tArr = Array.from({ length: points }, (_, i) => i * (cycles / freq) / points);
       const aArr = tArr.map(t => amp * Math.cos(2 * Math.PI * freq * t));
-      minX = 0;
-      maxX = tArr[tArr.length - 1];
-      minY = -amp;
-      maxY = amp;
+      const minX = 0;
+      const maxX = tArr[tArr.length - 1];
+      const minY = -amp;
+      const maxY = amp;
+      // Grilla
+      ctx.strokeStyle = 'rgba(0, 255, 255, 0.08)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 10; i++) {
+        const x = 40 + ((width - 50) * i) / 10;
+        const y = 10 + ((height - 40) * i) / 10;
+        ctx.beginPath();
+        ctx.moveTo(x, 10);
+        ctx.lineTo(x, height - 30);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(40, y);
+        ctx.lineTo(width - 10, y);
+        ctx.stroke();
+      }
+      drawAxes(ctx, width, height, minX, maxX, minY, maxY);
       ctx.save();
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
@@ -114,10 +125,16 @@ export const SignalVisualization = ({
       ctx.save();
       ctx.fillStyle = color;
       ctx.font = 'bold 12px monospace';
-      ctx.fillText(data.label, width - 120, 20);
+      ctx.fillText('Portadora', width - 120, 20);
       ctx.restore();
       return;
     }
+    if (!data || !data.time.length) return;
+    // Rango de datos
+    let minX = Math.min(...data.time);
+    let maxX = Math.max(...data.time);
+    let minY = Math.min(...data.amplitude);
+    let maxY = Math.max(...data.amplitude);
     // Grilla
     ctx.strokeStyle = 'rgba(0, 255, 255, 0.08)';
     ctx.lineWidth = 1;
@@ -185,11 +202,9 @@ export const SignalVisualization = ({
       const ctx = canvasRefs.digital.current.getContext('2d');
       if (ctx) ctx.clearRect(0, 0, canvasRefs.digital.current.width, canvasRefs.digital.current.height);
     }
-    if (carrierSignal && canvasRefs.carrier.current) {
-      drawSignal(canvasRefs.carrier.current, carrierSignal, '#007bff');
-    } else if (canvasRefs.carrier.current) {
-      const ctx = canvasRefs.carrier.current.getContext('2d');
-      if (ctx) ctx.clearRect(0, 0, canvasRefs.carrier.current.width, canvasRefs.carrier.current.height);
+    // Portadora: forzar onda artificial si no hay datos o pocos puntos
+    if (canvasRefs.carrier.current) {
+      drawSignal(canvasRefs.carrier.current, carrierSignal, '#007bff', !carrierSignal || (carrierSignal.time.length < 4));
     }
     if (modulatedSignal && canvasRefs.modulated.current) {
       drawSignal(canvasRefs.modulated.current, modulatedSignal, '#00ff7f');
@@ -209,11 +224,9 @@ export const SignalVisualization = ({
       const ctx = canvasRefs.digitalSingle.current.getContext('2d');
       if (ctx) ctx.clearRect(0, 0, canvasRefs.digitalSingle.current.width, canvasRefs.digitalSingle.current.height);
     }
-    if (carrierSignal && canvasRefs.carrierSingle.current) {
-      drawSignal(canvasRefs.carrierSingle.current, carrierSignal, '#007bff');
-    } else if (canvasRefs.carrierSingle.current) {
-      const ctx = canvasRefs.carrierSingle.current.getContext('2d');
-      if (ctx) ctx.clearRect(0, 0, canvasRefs.carrierSingle.current.width, canvasRefs.carrierSingle.current.height);
+    // Portadora individual: forzar onda artificial si no hay datos o pocos puntos
+    if (canvasRefs.carrierSingle.current) {
+      drawSignal(canvasRefs.carrierSingle.current, carrierSignal, '#007bff', !carrierSignal || (carrierSignal.time.length < 4));
     }
     if (modulatedSignal && canvasRefs.modulatedSingle.current) {
       drawSignal(canvasRefs.modulatedSingle.current, modulatedSignal, '#00ff7f');
