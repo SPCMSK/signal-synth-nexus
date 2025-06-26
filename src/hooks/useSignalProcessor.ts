@@ -162,7 +162,6 @@ function generateConstellation(bits: number[], demodBits: number[], config: any)
 
 export const useSignalProcessor = () => {
   const [digitalSignal, setDigitalSignal] = useState<SignalData | null>(null);
-  const [carrierSignal, setCarrierSignal] = useState<SignalData | null>(null); // NUEVO: señal portadora
   const [modulatedSignal, setModulatedSignal] = useState<SignalData | null>(null);
   const [modulatedNoisySignal, setModulatedNoisySignal] = useState<SignalData | null>(null); // Paso intermedio
   const [demodulatedSignal, setDemodulatedSignal] = useState<SignalData | null>(null);
@@ -196,22 +195,6 @@ export const useSignalProcessor = () => {
         }
       });
       setDigitalSignal({ time: digitalTime, amplitude: digitalAmplitude, label: 'Señal Digital' });
-
-      // --- Señal portadora (carrier) ---
-      // Usar un rango de tiempo más fino para la portadora si la cantidad de muestras es baja
-      let carrierTime = digitalTime;
-      let carrierAmplitude: number[];
-      if (digitalTime.length < 500) {
-        // Si la señal es muy corta, genera una portadora de 2 ciclos para mostrar la forma de onda
-        const cycles = 2;
-        const points = 1000;
-        const T = 1 / config.carrierFreq;
-        carrierTime = Array.from({ length: points }, (_, i) => i * (cycles * T) / points);
-        carrierAmplitude = carrierTime.map((t) => config.carrierAmplitude * Math.sin(2 * Math.PI * config.carrierFreq * t));
-      } else {
-        carrierAmplitude = digitalTime.map((t) => config.carrierAmplitude * Math.sin(2 * Math.PI * config.carrierFreq * t));
-      }
-      setCarrierSignal({ time: carrierTime, amplitude: carrierAmplitude, label: 'Portadora' });
 
       // --- Modulación ---
       let modulatedAmplitude: number[] = [];
@@ -289,7 +272,6 @@ export const useSignalProcessor = () => {
 
   return {
     digitalSignal,
-    carrierSignal, // NUEVO: expuesto
     modulatedSignal,
     modulatedNoisySignal, // Paso intermedio expuesto
     demodulatedSignal,
