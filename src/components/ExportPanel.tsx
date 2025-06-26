@@ -33,18 +33,37 @@ export const ExportPanel = ({ currentSimulation, simulationHistory }: ExportPane
   const [exportMode, setExportMode] = useState<'current' | 'all'>('current');
   const [showExportDialog, setShowExportDialog] = useState(false);
 
-  const exportCanvasAsImage = (canvasSelector: string, filename: string) => {
+  // Utilidad para mapear tipo a selector de canvas y nombre didáctico
+  const canvasSelectorMap: Record<string, { selector: string; label: string }> = {
+    digital: { selector: '#digital-canvas', label: 'Señal Digital' },
+    modulada: { selector: '#modulated-canvas', label: 'Señal Modulada' },
+    constelacion: { selector: '#constellation-canvas', label: 'Constelación' },
+  };
+
+  /**
+   * Exporta el canvas como imagen PNG.
+   * Incluye validación robusta y feedback didáctico.
+   */
+  const exportCanvasAsImage = (type: string, filename: string) => {
+    const mapping = canvasSelectorMap[type];
+    if (!mapping) {
+      toast({
+        title: 'Error',
+        description: 'Tipo de gráfico no reconocido para exportar.',
+        variant: 'destructive',
+      });
+      return;
+    }
     try {
-      const canvas = document.querySelector(canvasSelector) as HTMLCanvasElement;
+      const canvas = document.querySelector(mapping.selector) as HTMLCanvasElement;
       if (!canvas) {
         toast({
-          title: "Error",
-          description: "No se encontró el gráfico para exportar",
-          variant: "destructive"
+          title: 'Error',
+          description: `No se encontró el gráfico "${mapping.label}" para exportar. Asegúrate de haber ejecutado la simulación y que el gráfico esté visible.`,
+          variant: 'destructive',
         });
         return;
       }
-
       canvas.toBlob((blob) => {
         if (blob) {
           const url = URL.createObjectURL(blob);
@@ -55,44 +74,45 @@ export const ExportPanel = ({ currentSimulation, simulationHistory }: ExportPane
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
-          
           toast({
-            title: "Imagen Exportada",
-            description: `${filename} guardado exitosamente`,
+            title: 'Imagen Exportada',
+            description: `${filename} guardado exitosamente. Puedes usar esta imagen en tus informes o presentaciones.`,
+          });
+        } else {
+          toast({
+            title: 'Error',
+            description: 'No se pudo generar la imagen del gráfico. Intenta recargar la página o contactar soporte.',
+            variant: 'destructive',
           });
         }
       }, 'image/png');
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Error al exportar la imagen",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Error inesperado al exportar la imagen.',
+        variant: 'destructive',
       });
     }
   };
 
   const handleExportImage = (type: string) => {
     const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    
     if (exportMode === 'current') {
-      switch (type) {
-        case 'digital':
-          exportCanvasAsImage('canvas', `señal_digital_${timestamp}.png`);
-          break;
-        case 'modulada':
-          exportCanvasAsImage('canvas', `señal_modulada_${timestamp}.png`);
-          break;
-        case 'constelacion':
-          exportCanvasAsImage('canvas', `constelacion_${timestamp}.png`);
-          break;
-      }
+      exportCanvasAsImage(type, `${canvasSelectorMap[type]?.label?.replace(/ /g, '_').toLowerCase() || type}_${timestamp}.png`);
     } else {
+      if (simulationHistory.length === 0) {
+        toast({
+          title: 'Sin historial',
+          description: 'No hay simulaciones previas para exportar en modo "todas".',
+          variant: 'destructive',
+        });
+        return;
+      }
       toast({
-        title: "Exportación Múltiple",
-        description: `Exportando ${type} de ${simulationHistory.length + 1} simulaciones`,
+        title: 'Exportación Múltiple',
+        description: `Exportando ${canvasSelectorMap[type]?.label || type} de ${simulationHistory.length + 1} simulaciones. Se exportará solo el gráfico visible actual.`,
       });
-      // Aquí se exportaría la simulación actual más todas las del historial
-      exportCanvasAsImage('canvas', `${type}_todas_simulaciones_${timestamp}.png`);
+      exportCanvasAsImage(type, `${type}_todas_simulaciones_${timestamp}.png`);
     }
   };
 
@@ -336,7 +356,7 @@ Saludos cordiales.
           <div className="space-y-2">
             <h4 className="text-sm font-medium text-tech-cyan">Modo de Exportación</h4>
             <Select value={exportMode} onValueChange={(value: 'current' | 'all') => setExportMode(value)}>
-              <SelectTrigger className="bg-input border-border">
+              <SelectTrigger className="bg-input border-border" aria-label="Seleccionar modo de exportación">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -359,6 +379,8 @@ Saludos cordiales.
               onClick={() => handleExportImage('digital')}
               className="justify-start"
               disabled={!currentSimulation.digitalSignal}
+              aria-label="Exportar señal digital como imagen"
+              title="Exporta la señal digital mostrada como imagen PNG. Útil para informes y análisis."
             >
               <Image className="w-4 h-4 mr-2" />
               Señal Digital {exportMode === 'all' && `(${simulationHistory.length + 1})`}
@@ -369,6 +391,8 @@ Saludos cordiales.
               onClick={() => handleExportImage('modulada')}
               className="justify-start"
               disabled={!currentSimulation.modulatedSignal}
+              aria-label="Exportar señal modulada como imagen"
+              title="Exporta la señal modulada mostrada como imagen PNG."
             >
               <Image className="w-4 h-4 mr-2" />
               Señal Modulada {exportMode === 'all' && `(${simulationHistory.length + 1})`}
@@ -379,6 +403,8 @@ Saludos cordiales.
               onClick={() => handleExportImage('constelacion')}
               className="justify-start"
               disabled={!currentSimulation.constellationData}
+              aria-label="Exportar diagrama de constelación como imagen"
+              title="Exporta el diagrama de constelación actual como imagen PNG."
             >
               <Image className="w-4 h-4 mr-2" />
               Constelación {exportMode === 'all' && `(${simulationHistory.length + 1})`}
@@ -395,6 +421,8 @@ Saludos cordiales.
             onClick={handleExportReport}
             className="w-full bg-tech-green hover:bg-tech-green/80 text-background"
             disabled={!currentSimulation.ber}
+            aria-label="Exportar informe técnico"
+            title="Genera un informe técnico detallado en formato TXT, listo para entregar o analizar."
           >
             <BarChart3 className="w-4 h-4 mr-2" />
             {exportMode === 'current' ? 'Informe Actual' : `Informe Completo (${simulationHistory.length + 1})`}
@@ -410,6 +438,8 @@ Saludos cordiales.
             variant="outline"
             onClick={handleUploadReport}
             className="w-full border-tech-purple text-tech-purple hover:bg-tech-purple/10"
+            aria-label="Subir archivo de informe"
+            title="Carga un informe externo para revisión o comparación."
           >
             <Upload className="w-4 h-4 mr-2" />
             Subir Archivo
@@ -425,6 +455,8 @@ Saludos cordiales.
             variant="outline"
             onClick={handleScheduleDemo}
             className="w-full border-tech-cyan text-tech-cyan hover:bg-tech-cyan/10"
+            aria-label="Agendar demostración con profesor"
+            title="Abre tu cliente de correo para solicitar una demo personalizada al profesor."
           >
             <Calendar className="w-4 h-4 mr-2" />
             Agendar con Profesor

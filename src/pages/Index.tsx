@@ -1,5 +1,4 @@
-
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -19,6 +18,7 @@ import { useSignalProcessor } from '@/hooks/useSignalProcessor';
 import { useSimulationHistory } from '@/hooks/useSimulationHistory';
 
 const Index = () => {
+  // Estado de configuración de la simulación
   const [config, setConfig] = useState({
     bitRate: 1000,
     modulationType: 'BPSK' as 'BPSK' | 'QPSK',
@@ -29,9 +29,15 @@ const Index = () => {
     dataLength: 4
   });
 
+  // Estados de control de simulación y paneles
   const [isSimulating, setIsSimulating] = useState(false);
   const [showDocumentation, setShowDocumentation] = useState(false);
+  const [showConfigWarning, setShowConfigWarning] = useState(false);
+  const simulateBtnRef = useCallback((node: HTMLButtonElement | null) => {
+    if (node && !isSimulating) node.focus();
+  }, [isSimulating]);
   
+  // Lógica de procesamiento de señal y gestión de historial
   const { 
     digitalSignal, 
     modulatedSignal, 
@@ -49,6 +55,19 @@ const Index = () => {
     totalSimulations
   } = useSimulationHistory();
 
+  // Validación didáctica de configuración
+  const validateConfig = useCallback(() => {
+    if (config.dataLength < 4 || (config.noiseEnabled && config.snrDb < 7)) {
+      setShowConfigWarning(true);
+    } else {
+      setShowConfigWarning(false);
+    }
+  }, [config]);
+
+  // Ejecutar validación al cambiar configuración
+  useEffect(() => { validateConfig(); }, [config, validateConfig]);
+
+  // Maneja la simulación y guarda en historial
   const handleSimulate = useCallback(async () => {
     console.log('Simulate button clicked with config:', config);
     setIsSimulating(true);
@@ -74,45 +93,45 @@ const Index = () => {
     }
   }, [config, processSignal, digitalSignal, modulatedSignal, demodulatedSignal, constellationData, ber, addSimulation]);
 
+  // Maneja cambios de configuración
   const handleConfigChange = useCallback((newConfig: typeof config) => {
-    console.log('Config changed:', newConfig);
     setConfig(newConfig);
   }, []);
 
   return (
     <div className="min-h-screen bg-background tech-grid">
       <Header />
-      
       <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Status Bar */}
-        <div className="flex items-center justify-between">
+        {/* Barra de estado y acciones */}
+        <div className="flex items-center justify-between" aria-label="Barra de estado de simulación">
           <div className="flex items-center space-x-4">
-            <Badge variant="outline" className="border-tech-cyan text-tech-cyan">
+            <Badge variant="outline" className="border-tech-cyan text-tech-cyan" title="Tipo de modulación actual">
               <Signal className="w-3 h-3 mr-1" />
               {config.modulationType}
             </Badge>
-            <Badge variant="outline" className="border-tech-green text-tech-green">
+            <Badge variant="outline" className="border-tech-green text-tech-green" title="Velocidad de transmisión">
               <Waves className="w-3 h-3 mr-1" />
               {config.bitRate} bps
             </Badge>
-            <Badge variant="outline" className="border-tech-purple text-tech-purple">
+            <Badge variant="outline" className="border-tech-purple text-tech-purple" title="Relación señal/ruido">
               <CircuitBoard className="w-3 h-3 mr-1" />
               SNR: {config.snrDb} dB
             </Badge>
             {totalSimulations > 0 && (
-              <Badge variant="outline" className="border-tech-orange text-tech-orange">
+              <Badge variant="outline" className="border-tech-orange text-tech-orange" title="Simulaciones realizadas">
                 <History className="w-3 h-3 mr-1" />
                 {totalSimulations} simulaciones
               </Badge>
             )}
           </div>
-          
           <div className="flex items-center space-x-2">
             {totalSimulations > 0 && (
               <Button
-                onClick={clearHistory}
+                onClick={() => { clearHistory(); setTimeout(() => simulateBtnRef(document.querySelector('#simulate-btn')), 200); }}
                 variant="outline"
                 className="border-destructive text-destructive hover:bg-destructive/10"
+                aria-label="Limpiar historial de simulaciones"
+                title="Borra todas las simulaciones previas"
               >
                 Limpiar Historial
               </Button>
@@ -121,25 +140,36 @@ const Index = () => {
               onClick={() => setShowDocumentation(!showDocumentation)}
               variant="outline"
               className="border-muted hover:border-tech-cyan"
+              aria-label="Abrir manual de usuario"
+              title="Ver ayuda, tips y documentación"
             >
               Manual de Usuario
             </Button>
             <Button
+              id="simulate-btn"
+              ref={simulateBtnRef}
               onClick={handleSimulate}
               disabled={isSimulating || isProcessing}
               className="bg-tech-cyan hover:bg-tech-cyan/80 text-background font-semibold glow"
+              aria-label="Ejecutar simulación"
+              title="Ejecuta la simulación con la configuración actual"
             >
               {isSimulating ? 'Simulando...' : 'Ejecutar Simulación'}
             </Button>
           </div>
         </div>
-
-        {/* Documentation Panel */}
+        {/* Mensaje de advertencia didáctica */}
+        {showConfigWarning && (
+          <div className="my-2 p-3 rounded bg-yellow-100 text-yellow-800 border border-yellow-300 text-sm" role="alert">
+            <strong>Advertencia:</strong> La configuración actual puede no ser robusta para una simulación educativa óptima. Se recomienda usar al menos 8 bits y SNR &gt; 7 dB para observar resultados representativos.
+          </div>
+        )}
+        {/* Panel de documentación */}
         {showDocumentation && (
           <DocumentationPanel onClose={() => setShowDocumentation(false)} />
         )}
 
-        {/* Main Dashboard */}
+        {/* Panel de configuración */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
           {/* Configuration Panel */}
           <div className="xl:col-span-3">

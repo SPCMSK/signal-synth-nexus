@@ -1,15 +1,18 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { X, BookOpen, Settings, Activity, Zap } from 'lucide-react';
+import { X, BookOpen, Settings, Activity, Zap, Info } from 'lucide-react';
+import { useState } from 'react';
 
 interface DocumentationPanelProps {
   onClose: () => void;
 }
 
 export const DocumentationPanel = ({ onClose }: DocumentationPanelProps) => {
+  // Estado para FAQ expandida
+  const [faqOpen, setFaqOpen] = useState(false);
+
   return (
     <Card className="bg-card/95 border-border glow fixed inset-4 z-50 overflow-auto">
       <CardHeader>
@@ -23,6 +26,7 @@ export const DocumentationPanel = ({ onClose }: DocumentationPanelProps) => {
             size="sm"
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground"
+            aria-label="Cerrar documentación"
           >
             <X className="w-4 h-4" />
           </Button>
@@ -30,22 +34,22 @@ export const DocumentationPanel = ({ onClose }: DocumentationPanelProps) => {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-muted/50">
+          <TabsList className="grid w-full grid-cols-5 bg-muted/50">
             <TabsTrigger value="overview">Introducción</TabsTrigger>
             <TabsTrigger value="parameters">Parámetros</TabsTrigger>
             <TabsTrigger value="modulation">Modulación</TabsTrigger>
             <TabsTrigger value="analysis">Análisis</TabsTrigger>
+            <TabsTrigger value="faq">FAQ & Tips</TabsTrigger>
           </TabsList>
-          
+          {/* Introducción */}
           <TabsContent value="overview" className="space-y-4">
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-tech-green">¿Qué es SimuMod Pro?</h3>
               <p className="text-sm text-muted-foreground">
-                SimuMod Pro es un simulador avanzado de modulación digital diseñado para la educación 
-                en telecomunicaciones. Permite simular, visualizar y analizar sistemas de comunicación 
+                SimuMod Pro es un simulador avanzado de modulación digital diseñado para la educación
+                en telecomunicaciones. Permite simular, visualizar y analizar sistemas de comunicación
                 digital con modulaciones BPSK y QPSK.
               </p>
-              
               <h4 className="text-md font-semibold text-tech-cyan">Características Principales:</h4>
               <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                 <li>Simulación en tiempo real de modulación BPSK y QPSK</li>
@@ -55,7 +59,6 @@ export const DocumentationPanel = ({ onClose }: DocumentationPanelProps) => {
                 <li>Control de ruido gaussiano y SNR</li>
                 <li>Exportación de gráficos e informes</li>
               </ul>
-              
               <div className="p-4 border border-tech-cyan/30 rounded-lg bg-tech-cyan/5">
                 <h4 className="text-sm font-semibold text-tech-cyan mb-2">Inicio Rápido:</h4>
                 <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
@@ -68,11 +71,10 @@ export const DocumentationPanel = ({ onClose }: DocumentationPanelProps) => {
               </div>
             </div>
           </TabsContent>
-          
+          {/* Parámetros */}
           <TabsContent value="parameters" className="space-y-4">
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-tech-green">Parámetros de Configuración</h3>
-              
               <div className="space-y-3">
                 <div className="border border-border rounded-lg p-3">
                   <div className="flex items-center space-x-2 mb-2">
@@ -80,51 +82,47 @@ export const DocumentationPanel = ({ onClose }: DocumentationPanelProps) => {
                     <Badge variant="outline" className="border-tech-cyan text-tech-cyan">Bit Rate</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Velocidad de transmisión de datos en bits por segundo (bps). 
+                    Velocidad de transmisión de datos en bits por segundo (bps).
                     Rango: 100 - 10,000 bps. Valores más altos requieren mayor ancho de banda.
                   </p>
                 </div>
-                
                 <div className="border border-border rounded-lg p-3">
                   <div className="flex items-center space-x-2 mb-2">
                     <Activity className="w-4 h-4 text-tech-green" />
                     <Badge variant="outline" className="border-tech-green text-tech-green">Modulación</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    <span className="font-semibold">BPSK:</span> Modulación por desplazamiento de fase binaria (2 estados).<br/>
+                    <span className="font-semibold">BPSK:</span> Modulación por desplazamiento de fase binaria (2 estados).<br />
                     <span className="font-semibold">QPSK:</span> Modulación por desplazamiento de fase en cuadratura (4 estados).
                   </p>
                 </div>
-                
                 <div className="border border-border rounded-lg p-3">
                   <div className="flex items-center space-x-2 mb-2">
                     <Zap className="w-4 h-4 text-tech-purple" />
                     <Badge variant="outline" className="border-tech-purple text-tech-purple">Portadora</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    <span className="font-semibold">Frecuencia:</span> 1-50 kHz. Frecuencia de la señal portadora.<br/>
+                    <span className="font-semibold">Frecuencia:</span> 1-50 kHz. Frecuencia de la señal portadora.<br />
                     <span className="font-semibold">Amplitud:</span> 0.1-5V. Amplitud de la señal portadora.
                   </p>
                 </div>
-                
                 <div className="border border-border rounded-lg p-3">
                   <div className="flex items-center space-x-2 mb-2">
                     <Activity className="w-4 h-4 text-destructive" />
                     <Badge variant="outline" className="border-destructive text-destructive">Ruido</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    <span className="font-semibold">SNR:</span> Relación señal-ruido en dB (0-30 dB). 
+                    <span className="font-semibold">SNR:</span> Relación señal-ruido en dB (0-30 dB).
                     Valores más altos indican menos ruido y mejor calidad de señal.
                   </p>
                 </div>
               </div>
             </div>
           </TabsContent>
-          
+          {/* Modulación */}
           <TabsContent value="modulation" className="space-y-4">
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-tech-green">Tipos de Modulación</h3>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="border border-tech-cyan/30 rounded-lg p-4 bg-tech-cyan/5">
                   <h4 className="text-md font-semibold text-tech-cyan mb-2">BPSK</h4>
@@ -139,7 +137,6 @@ export const DocumentationPanel = ({ onClose }: DocumentationPanelProps) => {
                     <li>Constelación: 2 puntos en eje I</li>
                   </ul>
                 </div>
-                
                 <div className="border border-tech-green/30 rounded-lg p-4 bg-tech-green/5">
                   <h4 className="text-md font-semibold text-tech-green mb-2">QPSK</h4>
                   <p className="text-sm text-muted-foreground mb-2">
@@ -154,7 +151,6 @@ export const DocumentationPanel = ({ onClose }: DocumentationPanelProps) => {
                   </ul>
                 </div>
               </div>
-              
               <div className="p-4 border border-tech-orange/30 rounded-lg bg-tech-orange/5">
                 <h4 className="text-sm font-semibold text-tech-orange mb-2">Consideraciones de Diseño:</h4>
                 <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
@@ -166,11 +162,10 @@ export const DocumentationPanel = ({ onClose }: DocumentationPanelProps) => {
               </div>
             </div>
           </TabsContent>
-          
+          {/* Análisis */}
           <TabsContent value="analysis" className="space-y-4">
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-tech-green">Análisis de Resultados</h3>
-              
               <div className="space-y-3">
                 <div className="border border-border rounded-lg p-3">
                   <h4 className="text-md font-semibold text-tech-cyan mb-2">BER (Bit Error Rate)</h4>
@@ -192,7 +187,6 @@ export const DocumentationPanel = ({ onClose }: DocumentationPanelProps) => {
                     </div>
                   </div>
                 </div>
-                
                 <div className="border border-border rounded-lg p-3">
                   <h4 className="text-md font-semibold text-tech-green mb-2">Diagramas de Constelación</h4>
                   <p className="text-sm text-muted-foreground">
@@ -204,7 +198,6 @@ export const DocumentationPanel = ({ onClose }: DocumentationPanelProps) => {
                     <li><span className="text-destructive">Puntos rojos:</span> Errores detectados</li>
                   </ul>
                 </div>
-                
                 <div className="border border-border rounded-lg p-3">
                   <h4 className="text-md font-semibold text-tech-purple mb-2">Gráficos de Señales</h4>
                   <p className="text-sm text-muted-foreground">
@@ -217,7 +210,6 @@ export const DocumentationPanel = ({ onClose }: DocumentationPanelProps) => {
                   </ul>
                 </div>
               </div>
-              
               <div className="p-4 border border-tech-cyan/30 rounded-lg bg-tech-cyan/5">
                 <h4 className="text-sm font-semibold text-tech-cyan mb-2">Interpretación de Resultados:</h4>
                 <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
@@ -226,6 +218,46 @@ export const DocumentationPanel = ({ onClose }: DocumentationPanelProps) => {
                   <li>Evalúa el BER bajo diferentes condiciones de ruido</li>
                   <li>Analiza el trade-off entre velocidad y robustez</li>
                 </ol>
+              </div>
+            </div>
+          </TabsContent>
+          {/* FAQ y Tips */}
+          <TabsContent value="faq" className="space-y-4">
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-tech-green flex items-center gap-2">FAQ & Tips <Info className="w-4 h-4" /></h3>
+              <div className="space-y-3">
+                <div className="border border-border rounded-lg p-3 bg-background/70">
+                  <h4 className="text-md font-semibold text-tech-cyan mb-2">¿Por qué mi BER es alto?</h4>
+                  <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                    <li>El SNR es bajo (mucho ruido en el canal).</li>
+                    <li>La modulación QPSK es más sensible al ruido que BPSK.</li>
+                    <li>La longitud de datos es muy baja (pocos bits).</li>
+                    <li>Verifica que los parámetros estén dentro de los rangos recomendados.</li>
+                  </ul>
+                </div>
+                <div className="border border-border rounded-lg p-3 bg-background/70">
+                  <h4 className="text-md font-semibold text-tech-green mb-2">¿Qué significa cada color en los gráficos?</h4>
+                  <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                    <li><span className="text-tech-cyan">Cian:</span> Señal digital</li>
+                    <li><span className="text-tech-green">Verde:</span> Señal modulada o puntos ideales</li>
+                    <li><span className="text-yellow-400">Amarillo:</span> Puntos recibidos</li>
+                    <li><span className="text-destructive">Rojo:</span> Errores detectados</li>
+                  </ul>
+                </div>
+                <div className="border border-border rounded-lg p-3 bg-background/70">
+                  <h4 className="text-md font-semibold text-tech-purple mb-2">¿Dónde aprender más?</h4>
+                  <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                    <li><a href="https://es.wikipedia.org/wiki/Modulaci%C3%B3n_por_desplazamiento_de_fase" target="_blank" rel="noopener noreferrer" className="underline text-tech-cyan">BPSK en Wikipedia</a></li>
+                    <li><a href="https://es.wikipedia.org/wiki/Modulaci%C3%B3n_QPSK" target="_blank" rel="noopener noreferrer" className="underline text-tech-green">QPSK en Wikipedia</a></li>
+                    <li><a href="https://www.itu.int/en/ITU-T/studygroups/2017-2020/15/Pages/digital-modulation.aspx" target="_blank" rel="noopener noreferrer" className="underline text-tech-purple">ITU: Digital Modulation</a></li>
+                  </ul>
+                </div>
+                <div className="border border-border rounded-lg p-3 bg-background/70">
+                  <h4 className="text-md font-semibold text-tech-orange mb-2">¿Cómo puedo enviar feedback o sugerencias?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Puedes enviar tus comentarios o reportar errores a <a href="mailto:soporte@simumodpro.com" className="underline text-tech-cyan">soporte@simumodpro.com</a> o a través del formulario de contacto en la web oficial.
+                  </p>
+                </div>
               </div>
             </div>
           </TabsContent>
