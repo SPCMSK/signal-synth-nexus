@@ -21,11 +21,11 @@ const Index = () => {
   const [config, setConfig] = useState({
     bitRate: 1000,
     modulationType: 'BPSK' as 'BPSK' | 'QPSK',
-    carrierFreq: 10000,
+    carrierFreq: 5000,
     carrierAmplitude: 1,
-    snrDb: 20,
+    snrDb: 10,
     noiseEnabled: false,
-    dataLength: 1000
+    dataLength: 4  // Valor más pequeño por defecto
   });
 
   const [isSimulating, setIsSimulating] = useState(false);

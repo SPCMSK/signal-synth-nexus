@@ -45,14 +45,14 @@ export const ConfigPanel = ({ config, onConfigChange }: ConfigPanelProps) => {
           <Slider
             value={[config.bitRate]}
             onValueChange={([value]) => updateConfig('bitRate', value)}
-            max={10000}
+            max={2000}
             min={100}
             step={100}
             className="tech-slider"
           />
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>100 bps</span>
-            <span>10k bps</span>
+            <span>2k bps</span>
           </div>
         </div>
 
@@ -88,14 +88,14 @@ export const ConfigPanel = ({ config, onConfigChange }: ConfigPanelProps) => {
           <Slider
             value={[config.carrierFreq]}
             onValueChange={([value]) => updateConfig('carrierFreq', value)}
-            max={50000}
+            max={20000}
             min={1000}
             step={1000}
             className="tech-slider"
           />
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>1 kHz</span>
-            <span>50 kHz</span>
+            <span>20 kHz</span>
           </div>
         </div>
 
@@ -108,14 +108,14 @@ export const ConfigPanel = ({ config, onConfigChange }: ConfigPanelProps) => {
           <Slider
             value={[config.carrierAmplitude]}
             onValueChange={([value]) => updateConfig('carrierAmplitude', value)}
-            max={5}
-            min={0.1}
+            max={3}
+            min={0.5}
             step={0.1}
             className="tech-slider"
           />
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>0.1V</span>
-            <span>5V</span>
+            <span>0.5V</span>
+            <span>3V</span>
           </div>
         </div>
 
@@ -143,14 +143,14 @@ export const ConfigPanel = ({ config, onConfigChange }: ConfigPanelProps) => {
               <Slider
                 value={[config.snrDb]}
                 onValueChange={([value]) => updateConfig('snrDb', value)}
-                max={30}
+                max={20}
                 min={0}
                 step={1}
                 className="tech-slider"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>0 dB</span>
-                <span>30 dB</span>
+                <span>20 dB</span>
               </div>
             </div>
           )}
@@ -158,7 +158,7 @@ export const ConfigPanel = ({ config, onConfigChange }: ConfigPanelProps) => {
 
         <Separator className="bg-border" />
 
-        {/* Data Length */}
+        {/* Data Length - Ahora con valores más pequeños */}
         <div className="space-y-2">
           <Label className="text-sm font-medium">
             Longitud de Datos: {config.dataLength} bits
@@ -166,14 +166,14 @@ export const ConfigPanel = ({ config, onConfigChange }: ConfigPanelProps) => {
           <Slider
             value={[config.dataLength]}
             onValueChange={([value]) => updateConfig('dataLength', value)}
-            max={2000}
-            min={100}
-            step={100}
+            max={8}
+            min={3}
+            step={1}
             className="tech-slider"
           />
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>100 bits</span>
-            <span>2000 bits</span>
+            <span>3 bits</span>
+            <span>8 bits</span>
           </div>
         </div>
       </CardContent>
