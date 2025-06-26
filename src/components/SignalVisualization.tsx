@@ -155,16 +155,30 @@ export const SignalVisualization = ({
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
     ctx.fillRect(0, 0, width, height);
-    // Generar 2 ciclos de la portadora
-    const cycles = 2;
-    const points = 1000;
-    const T = 1 / carrierFreq;
-    const tArr = Array.from({ length: points }, (_, i) => i * (cycles * T) / points);
-    const aArr = tArr.map(t => carrierAmplitude * Math.sin(2 * Math.PI * carrierFreq * t));
-    const minX = 0;
-    const maxX = tArr[tArr.length - 1];
-    const minY = -carrierAmplitude;
-    const maxY = carrierAmplitude;
+    // --- Corrección: sincronizar la portadora con la señal digital si existe ---
+    let tArr: number[] = [];
+    let aArr: number[] = [];
+    let minX = 0;
+    let maxX = 1;
+    let minY = -carrierAmplitude;
+    let maxY = carrierAmplitude;
+    // Si hay señal digital, usar su rango de tiempo y resolución
+    if (digitalSignal && digitalSignal.time.length > 1) {
+      minX = Math.min(...digitalSignal.time);
+      maxX = Math.max(...digitalSignal.time);
+      const N = digitalSignal.time.length;
+      tArr = digitalSignal.time;
+      aArr = tArr.map(t => carrierAmplitude * Math.sin(2 * Math.PI * carrierFreq * t));
+    } else {
+      // Si no hay señal digital, mostrar 2 ciclos como antes
+      const cycles = 2;
+      const points = 1000;
+      const T = 1 / carrierFreq;
+      tArr = Array.from({ length: points }, (_, i) => i * (cycles * T) / points);
+      aArr = tArr.map(t => carrierAmplitude * Math.sin(2 * Math.PI * carrierFreq * t));
+      minX = 0;
+      maxX = tArr[tArr.length - 1];
+    }
     // Grilla
     ctx.strokeStyle = 'rgba(0, 255, 255, 0.08)';
     ctx.lineWidth = 1;
