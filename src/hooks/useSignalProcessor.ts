@@ -162,6 +162,7 @@ function generateConstellation(bits: number[], demodBits: number[], config: any)
 
 export const useSignalProcessor = () => {
   const [digitalSignal, setDigitalSignal] = useState<SignalData | null>(null);
+  const [carrierSignal, setCarrierSignal] = useState<SignalData | null>(null); // NUEVO: señal portadora
   const [modulatedSignal, setModulatedSignal] = useState<SignalData | null>(null);
   const [modulatedNoisySignal, setModulatedNoisySignal] = useState<SignalData | null>(null); // Paso intermedio
   const [demodulatedSignal, setDemodulatedSignal] = useState<SignalData | null>(null);
@@ -195,6 +196,12 @@ export const useSignalProcessor = () => {
         }
       });
       setDigitalSignal({ time: digitalTime, amplitude: digitalAmplitude, label: 'Señal Digital' });
+
+      // --- Señal portadora (carrier) ---
+      const carrierAmplitude: number[] = digitalTime.map((t) =>
+        config.carrierAmplitude * Math.cos(2 * Math.PI * config.carrierFreq * t)
+      );
+      setCarrierSignal({ time: digitalTime, amplitude: carrierAmplitude, label: 'Portadora' });
 
       // --- Modulación ---
       let modulatedAmplitude: number[] = [];
@@ -272,6 +279,7 @@ export const useSignalProcessor = () => {
 
   return {
     digitalSignal,
+    carrierSignal, // NUEVO: expuesto
     modulatedSignal,
     modulatedNoisySignal, // Paso intermedio expuesto
     demodulatedSignal,

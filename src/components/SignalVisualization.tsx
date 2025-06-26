@@ -12,6 +12,7 @@ interface SignalData {
 
 interface SignalVisualizationProps {
   digitalSignal: SignalData | null;
+  carrierSignal: SignalData | null; // NUEVO: señal portadora
   modulatedSignal: SignalData | null;
   demodulatedSignal: SignalData | null;
   isProcessing: boolean;
@@ -24,15 +25,18 @@ interface SignalVisualizationProps {
 
 export const SignalVisualization = ({
   digitalSignal,
+  carrierSignal,
   modulatedSignal,
   demodulatedSignal,
   isProcessing
 }: SignalVisualizationProps) => {
   const canvasRefs = {
     digital: useRef<HTMLCanvasElement>(null),
+    carrier: useRef<HTMLCanvasElement>(null), // NUEVO: ref para portadora
     modulated: useRef<HTMLCanvasElement>(null),
     demodulated: useRef<HTMLCanvasElement>(null),
     digitalSingle: useRef<HTMLCanvasElement>(null),
+    carrierSingle: useRef<HTMLCanvasElement>(null), // NUEVO: ref para portadora
     modulatedSingle: useRef<HTMLCanvasElement>(null),
     demodulatedSingle: useRef<HTMLCanvasElement>(null)
   };
@@ -146,6 +150,12 @@ export const SignalVisualization = ({
       const ctx = canvasRefs.digital.current.getContext('2d');
       if (ctx) ctx.clearRect(0, 0, canvasRefs.digital.current.width, canvasRefs.digital.current.height);
     }
+    if (carrierSignal && canvasRefs.carrier.current) {
+      drawSignal(canvasRefs.carrier.current, carrierSignal, '#007bff');
+    } else if (canvasRefs.carrier.current) {
+      const ctx = canvasRefs.carrier.current.getContext('2d');
+      if (ctx) ctx.clearRect(0, 0, canvasRefs.carrier.current.width, canvasRefs.carrier.current.height);
+    }
     if (modulatedSignal && canvasRefs.modulated.current) {
       drawSignal(canvasRefs.modulated.current, modulatedSignal, '#00ff7f');
     } else if (canvasRefs.modulated.current) {
@@ -164,6 +174,12 @@ export const SignalVisualization = ({
       const ctx = canvasRefs.digitalSingle.current.getContext('2d');
       if (ctx) ctx.clearRect(0, 0, canvasRefs.digitalSingle.current.width, canvasRefs.digitalSingle.current.height);
     }
+    if (carrierSignal && canvasRefs.carrierSingle.current) {
+      drawSignal(canvasRefs.carrierSingle.current, carrierSignal, '#007bff');
+    } else if (canvasRefs.carrierSingle.current) {
+      const ctx = canvasRefs.carrierSingle.current.getContext('2d');
+      if (ctx) ctx.clearRect(0, 0, canvasRefs.carrierSingle.current.width, canvasRefs.carrierSingle.current.height);
+    }
     if (modulatedSignal && canvasRefs.modulatedSingle.current) {
       drawSignal(canvasRefs.modulatedSingle.current, modulatedSignal, '#00ff7f');
     } else if (canvasRefs.modulatedSingle.current) {
@@ -180,7 +196,7 @@ export const SignalVisualization = ({
 
   useEffect(() => {
     redrawAllSignals();
-  }, [digitalSignal, modulatedSignal, demodulatedSignal]);
+  }, [digitalSignal, carrierSignal, modulatedSignal, demodulatedSignal]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -232,9 +248,10 @@ export const SignalVisualization = ({
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="combined" className="w-full" onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-4 bg-muted/50" role="tablist" aria-label="Selector de tipo de señal">
+          <TabsList className="grid w-full grid-cols-5 bg-muted/50" role="tablist" aria-label="Selector de tipo de señal">
             <TabsTrigger value="combined" aria-label="Ver todas las señales superpuestas">Combinado</TabsTrigger>
             <TabsTrigger value="digital" aria-label="Ver solo la señal digital">Digital</TabsTrigger>
+            <TabsTrigger value="carrier" aria-label="Ver solo la portadora">Portadora</TabsTrigger>
             <TabsTrigger value="modulated" aria-label="Ver solo la señal modulada">Modulada</TabsTrigger>
             <TabsTrigger value="demodulated" aria-label="Ver solo la señal demodulada">Demodulada</TabsTrigger>
           </TabsList>
@@ -256,6 +273,23 @@ export const SignalVisualization = ({
                 />
                 {!digitalSignal && renderEmpty('la señal digital')}
                 {renderShortSignalWarning(digitalSignal)}
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Badge variant="outline" className="border-blue-600 text-blue-600">
+                    <Waves className="w-3 h-3 mr-1" />
+                    Portadora
+                  </Badge>
+                </div>
+                <canvas
+                  ref={canvasRefs.carrier}
+                  width={600}
+                  height={120}
+                  className="w-full border border-border rounded bg-background/50"
+                  aria-label="Gráfica de portadora"
+                />
+                {!carrierSignal && renderEmpty('la portadora')}
+                {renderShortSignalWarning(carrierSignal)}
               </div>
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
@@ -312,6 +346,35 @@ export const SignalVisualization = ({
                 {!digitalSignal && renderEmpty('la señal digital')}
                 {renderShortSignalWarning(digitalSignal)}
                 {tooltip && tooltip.label === 'Señal Digital' && (
+                  <div
+                    className="absolute z-10 px-2 py-1 text-xs bg-black/80 text-white rounded shadow"
+                    style={{ left: tooltip.x + 10, top: tooltip.y }}
+                  >
+                    Amplitud: {tooltip.value?.toFixed(2)}
+                  </div>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+          <TabsContent value="carrier" role="tabpanel" aria-label="Solo portadora">
+            <div className="space-y-2">
+              <Badge variant="outline" className="border-blue-600 text-blue-600">
+                <Waves className="w-3 h-3 mr-1" />
+                Portadora
+              </Badge>
+              <div className="relative">
+                <canvas
+                  ref={canvasRefs.carrierSingle}
+                  width={600}
+                  height={300}
+                  className="w-full border border-border rounded bg-background/50"
+                  onMouseMove={(e) => handleMouseMove(e, carrierSignal)}
+                  onMouseLeave={handleMouseLeave}
+                  aria-label="Gráfica interactiva de portadora"
+                />
+                {!carrierSignal && renderEmpty('la portadora')}
+                {renderShortSignalWarning(carrierSignal)}
+                {tooltip && tooltip.label === 'Portadora' && (
                   <div
                     className="absolute z-10 px-2 py-1 text-xs bg-black/80 text-white rounded shadow"
                     style={{ left: tooltip.x + 10, top: tooltip.y }}
