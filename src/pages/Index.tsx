@@ -40,6 +40,7 @@ const Index = () => {
   // Lógica de procesamiento de señal y gestión de historial
   const { 
     digitalSignal, 
+    carrierSignal,
     modulatedSignal, 
     demodulatedSignal,
     constellationData,
@@ -123,7 +124,6 @@ const Index = () => {
                 {totalSimulations} simulaciones
               </Badge>
             )}
-          </div>
           <div className="flex items-center space-x-2">
             {totalSimulations > 0 && (
               <Button
@@ -177,12 +177,14 @@ const Index = () => {
           </div>
 
           {/* Visualization Area */}
-          <div className="xl:col-span-6 space-y-6">
             <SignalVisualization
               digitalSignal={digitalSignal}
+              carrierSignal={carrierSignal}
               modulatedSignal={modulatedSignal}
               demodulatedSignal={demodulatedSignal}
               isProcessing={isProcessing}
+              carrierFreq={config.carrierFreq}
+              carrierAmplitude={config.carrierAmplitude}
             />
             
             <ConstellationDiagram
