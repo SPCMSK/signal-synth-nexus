@@ -147,10 +147,15 @@ export const useSignalProcessor = () => {
       
       for (let i = 0; i < Math.min(100, bits.length); i++) {
         if (config.modulationType === 'BPSK') {
-          const point = { i: bits[i] === 1 ? 1 : -1, q: 0, symbol: bits[i].toString() };
+          const point: ConstellationPoint = { 
+            i: bits[i] === 1 ? 1 : -1, 
+            q: 0, 
+            symbol: bits[i].toString(),
+            isError: false
+          };
           transmitted.push(point);
           
-          const receivedPoint = { ...point };
+          const receivedPoint: ConstellationPoint = { ...point };
           if (config.noiseEnabled) {
             receivedPoint.i += (Math.random() - 0.5) * 0.3;
             receivedPoint.q += (Math.random() - 0.5) * 0.3;
@@ -160,7 +165,12 @@ export const useSignalProcessor = () => {
         } else {
           // QPSK
           const bitPair = [bits[i * 2] || 0, bits[i * 2 + 1] || 0];
-          let point = { i: 0, q: 0, symbol: `${bitPair[0]}${bitPair[1]}` };
+          let point: ConstellationPoint = { 
+            i: 0, 
+            q: 0, 
+            symbol: `${bitPair[0]}${bitPair[1]}`,
+            isError: false
+          };
           
           if (bitPair[0] === 0 && bitPair[1] === 0) { point.i = 1; point.q = 1; }
           else if (bitPair[0] === 0 && bitPair[1] === 1) { point.i = -1; point.q = 1; }
@@ -169,7 +179,7 @@ export const useSignalProcessor = () => {
           
           transmitted.push(point);
           
-          const receivedPoint = { ...point };
+          const receivedPoint: ConstellationPoint = { ...point };
           if (config.noiseEnabled) {
             receivedPoint.i += (Math.random() - 0.5) * 0.3;
             receivedPoint.q += (Math.random() - 0.5) * 0.3;
