@@ -155,7 +155,7 @@ export const SignalVisualization = ({
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
     ctx.fillRect(0, 0, width, height);
-    // --- Corrección: sincronizar la portadora con la señal digital si existe ---
+    // --- SIEMPRE graficar la portadora con los parámetros actuales, independiente de la señal digital ---
     let tArr: number[] = [];
     let aArr: number[] = [];
     let minX = 0;
@@ -167,10 +167,10 @@ export const SignalVisualization = ({
       minX = Math.min(...digitalSignal.time);
       maxX = Math.max(...digitalSignal.time);
       const N = digitalSignal.time.length;
-      tArr = digitalSignal.time;
+      tArr = Array.from({ length: N }, (_, i) => minX + (i * (maxX - minX)) / (N - 1));
       aArr = tArr.map(t => carrierAmplitude * Math.sin(2 * Math.PI * carrierFreq * t));
     } else {
-      // Si no hay señal digital, mostrar 2 ciclos como antes
+      // Si no hay señal digital, mostrar 2 ciclos de la portadora
       const cycles = 2;
       const points = 1000;
       const T = 1 / carrierFreq;
