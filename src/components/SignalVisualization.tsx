@@ -72,12 +72,14 @@ export const SignalVisualization = ({
   // Dibuja la señal y ejes
   const drawSignal = (canvas: HTMLCanvasElement, data: SignalData | null, color: string) => {
     const ctx = canvas.getContext('2d');
-    if (!ctx || !data || !data.time.length) return;
+    if (!ctx) return;
     const width = canvas.width;
     const height = canvas.height;
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
     ctx.fillRect(0, 0, width, height);
+    // Solo graficar si hay datos válidos
+    if (!data || !data.time.length) return;
     // Rango de datos
     let minX = Math.min(...data.time);
     let maxX = Math.max(...data.time);
