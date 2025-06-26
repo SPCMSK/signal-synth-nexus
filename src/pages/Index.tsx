@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -42,14 +42,21 @@ const Index = () => {
   } = useSignalProcessor();
 
   const handleSimulate = useCallback(async () => {
+    console.log('Simulate button clicked with config:', config);
     setIsSimulating(true);
-    await processSignal(config);
-    setIsSimulating(false);
+    try {
+      await processSignal(config);
+    } catch (error) {
+      console.error('Simulation error:', error);
+    } finally {
+      setIsSimulating(false);
+    }
   }, [config, processSignal]);
 
-  useEffect(() => {
-    handleSimulate();
-  }, [handleSimulate]);
+  const handleConfigChange = useCallback((newConfig: typeof config) => {
+    console.log('Config changed:', newConfig);
+    setConfig(newConfig);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background tech-grid">
@@ -100,7 +107,7 @@ const Index = () => {
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
           {/* Configuration Panel */}
           <div className="xl:col-span-3">
-            <ConfigPanel config={config} onConfigChange={setConfig} />
+            <ConfigPanel config={config} onConfigChange={handleConfigChange} />
           </div>
 
           {/* Visualization Area */}

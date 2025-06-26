@@ -23,7 +23,9 @@ interface ConfigPanelProps {
 
 export const ConfigPanel = ({ config, onConfigChange }: ConfigPanelProps) => {
   const updateConfig = (key: string, value: any) => {
-    onConfigChange({ ...config, [key]: value });
+    const newConfig = { ...config, [key]: value };
+    console.log(`Updating ${key} to ${value}:`, newConfig);
+    onConfigChange(newConfig);
   };
 
   return (
