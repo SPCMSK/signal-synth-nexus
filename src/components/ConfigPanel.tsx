@@ -22,21 +22,25 @@ interface ConfigPanelProps {
     snrDb: number;
     noiseEnabled: boolean;
     dataLength: number;
+    bitSource?: 'random' | 'custom'; // NUEVO: fuente de bits
+    customBits?: string; // NUEVO: secuencia personalizada
   };
   onConfigChange: (config: any) => void;
 }
 
 const PARAM_LIMITS = {
-  bitRate: { min: 100, max: 10000 },
-  carrierFreq: { min: 1000, max: 20000 },
+  bitRate: { min: 100, max: 100000 },
+  carrierFreq: { min: 1000, max: 100000 },
   carrierAmplitude: { min: 0.1, max: 2.0 },
   snrDb: { min: 0, max: 30 },
-  dataLength: { min: 3, max: 8 },
+  dataLength: { min: 3, max: 64 },
 };
 
 export const ConfigPanel = ({ config, onConfigChange }: ConfigPanelProps) => {
   // Estado para feedback visual
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  // Estado local para bits custom
+  const [customBits, setCustomBits] = useState(config.customBits || '');
 
   // Validación inmediata de parámetros
   const validate = (key: string, value: any) => {
@@ -61,17 +65,28 @@ export const ConfigPanel = ({ config, onConfigChange }: ConfigPanelProps) => {
         err = 'Para QPSK, la longitud debe ser par.';
       }
     }
+    if (key === 'customBits') {
+      if (!/^[01]*$/.test(value)) {
+        err = 'Solo se permiten 0 y 1.';
+      } else if (value.length < PARAM_LIMITS.dataLength.min || value.length > PARAM_LIMITS.dataLength.max) {
+        err = `La secuencia debe tener entre ${PARAM_LIMITS.dataLength.min} y ${PARAM_LIMITS.dataLength.max} bits.`;
+      } else if (config.modulationType === 'QPSK' && value.length % 2 !== 0) {
+        err = 'Para QPSK, la longitud debe ser par.';
+      }
+    }
     setErrors((prev) => ({ ...prev, [key]: err }));
     return err === '';
   };
 
   // Actualización robusta de configuración
   const updateConfig = (key: string, value: any) => {
-    // Si cambia la modulación a QPSK y dataLength es impar, lo ajusta automáticamente
     let newConfig = { ...config, [key]: value };
     if (key === 'modulationType' && value === 'QPSK' && newConfig.dataLength % 2 !== 0) {
       newConfig.dataLength = newConfig.dataLength + 1;
       setErrors((prev) => ({ ...prev, dataLength: '' }));
+    }
+    if (key === 'customBits') {
+      setCustomBits(value);
     }
     validate(key, value);
     onConfigChange(newConfig);
@@ -276,6 +291,45 @@ export const ConfigPanel = ({ config, onConfigChange }: ConfigPanelProps) => {
             <span>{PARAM_LIMITS.dataLength.max} bits</span>
           </div>
           {errors.dataLength && <div className="text-xs text-red-500">{errors.dataLength}</div>}
+        </div>
+
+        <Separator className="bg-border" />
+        {/* Fuente de bits: random o custom */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium flex items-center gap-1">
+            Secuencia de bits
+            <span title="Elige si la secuencia de bits es aleatoria o personalizada.">
+              <Info className="w-3 h-3" />
+            </span>
+          </Label>
+          <Select
+            value={config.bitSource || 'random'}
+            onValueChange={(value) => updateConfig('bitSource', value)}
+          >
+            <SelectTrigger className="bg-input border-border">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="random">Aleatoria</SelectItem>
+              <SelectItem value="custom">Personalizada</SelectItem>
+            </SelectContent>
+          </Select>
+          {((config.bitSource || 'random') === 'custom') && (
+            <div className="mt-2">
+              <Label className="text-xs font-medium">Ingresa la secuencia de bits (0 y 1):</Label>
+              <input
+                type="text"
+                value={customBits}
+                onChange={e => updateConfig('customBits', e.target.value.replace(/[^01]/g, ''))}
+                maxLength={PARAM_LIMITS.dataLength.max}
+                className="w-full border rounded px-2 py-1 text-sm font-mono"
+                placeholder="Ej: 1011001"
+                aria-label="Secuencia personalizada de bits"
+              />
+              {errors.customBits && <div className="text-xs text-red-500">{errors.customBits}</div>}
+              <div className="text-xs text-muted-foreground mt-1">Longitud: {customBits.length} bits</div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

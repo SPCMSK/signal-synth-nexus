@@ -43,6 +43,11 @@ function generateRandomBits(length: number): number[] {
   return Array.from({ length }, () => Math.random() > 0.5 ? 1 : 0);
 }
 
+// --- NUEVO: Función para convertir string de bits custom a array de números ---
+function parseCustomBits(bits: string): number[] {
+  return bits.split('').map(b => b === '1' ? 1 : 0);
+}
+
 // --- Función para agregar ruido gaussiano (Box-Muller) ---
 function addGaussianNoise(signal: number[], snrDb: number): number[] {
   const snrLinear = Math.pow(10, snrDb / 10);
@@ -181,7 +186,16 @@ export const useSignalProcessor = () => {
       await new Promise(resolve => setTimeout(resolve, 300));
 
       // --- Generación de bits ---
-      const bits = generateRandomBits(config.dataLength);
+      let bits: number[];
+      if (config.bitSource === 'custom' && typeof config.customBits === 'string' && config.customBits.length >= 1) {
+        bits = parseCustomBits(config.customBits).slice(0, config.dataLength);
+        // Si la secuencia es más corta que dataLength, completar con ceros
+        if (bits.length < config.dataLength) {
+          bits = bits.concat(Array(config.dataLength - bits.length).fill(0));
+        }
+      } else {
+        bits = generateRandomBits(config.dataLength);
+      }
       // --- Parámetro didáctico: samplesPerBit ---
       config.samplesPerBit = Math.max(100, Math.floor(2000 / config.bitRate)); // Aumenta la resolución mínima
 
