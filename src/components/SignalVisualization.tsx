@@ -27,7 +27,10 @@ export const SignalVisualization = ({
   const canvasRefs = {
     digital: useRef<HTMLCanvasElement>(null),
     modulated: useRef<HTMLCanvasElement>(null),
-    demodulated: useRef<HTMLCanvasElement>(null)
+    demodulated: useRef<HTMLCanvasElement>(null),
+    digitalSingle: useRef<HTMLCanvasElement>(null),
+    modulatedSingle: useRef<HTMLCanvasElement>(null),
+    demodulatedSingle: useRef<HTMLCanvasElement>(null)
   };
 
   const drawSignal = (canvas: HTMLCanvasElement, data: SignalData, color: string) => {
@@ -37,11 +40,12 @@ export const SignalVisualization = ({
     const width = canvas.width;
     const height = canvas.height;
     
-    // Clear canvas
+    // Limpiar canvas completamente
+    ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
     ctx.fillRect(0, 0, width, height);
     
-    // Draw grid
+    // Dibujar grilla
     ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
     ctx.lineWidth = 1;
     for (let i = 0; i <= 10; i++) {
@@ -57,7 +61,7 @@ export const SignalVisualization = ({
       ctx.stroke();
     }
     
-    // Draw signal
+    // Dibujar señal
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -66,43 +70,81 @@ export const SignalVisualization = ({
     const ampRange = Math.max(...data.amplitude) - Math.min(...data.amplitude);
     const ampMin = Math.min(...data.amplitude);
     
-    data.time.forEach((time, index) => {
-      const x = ((time - Math.min(...data.time)) / timeRange) * width;
-      const y = height - ((data.amplitude[index] - ampMin) / ampRange) * height;
+    if (timeRange > 0 && ampRange > 0) {
+      data.time.forEach((time, index) => {
+        const x = ((time - Math.min(...data.time)) / timeRange) * width;
+        const y = height - ((data.amplitude[index] - ampMin) / ampRange) * height;
+        
+        if (index === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      });
       
-      if (index === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
-    });
-    
-    ctx.stroke();
-    
-    // Add glow effect
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 10;
-    ctx.stroke();
-    ctx.shadowBlur = 0;
+      ctx.stroke();
+      
+      // Efecto de brillo
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 10;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
   };
 
-  useEffect(() => {
-    if (digitalSignal && canvasRefs.digital.current) {
-      drawSignal(canvasRefs.digital.current, digitalSignal, '#00ffff');
+  // Función para redibujar todas las gráficas
+  const redrawAllSignals = () => {
+    console.log('Redrawing all signals');
+    
+    if (digitalSignal) {
+      if (canvasRefs.digital.current) {
+        drawSignal(canvasRefs.digital.current, digitalSignal, '#00ffff');
+      }
+      if (canvasRefs.digitalSingle.current) {
+        drawSignal(canvasRefs.digitalSingle.current, digitalSignal, '#00ffff');
+      }
     }
-  }, [digitalSignal]);
+    
+    if (modulatedSignal) {
+      if (canvasRefs.modulated.current) {
+        drawSignal(canvasRefs.modulated.current, modulatedSignal, '#00ff7f');
+      }
+      if (canvasRefs.modulatedSingle.current) {
+        drawSignal(canvasRefs.modulatedSingle.current, modulatedSignal, '#00ff7f');
+      }
+    }
+    
+    if (demodulatedSignal) {
+      if (canvasRefs.demodulated.current) {
+        drawSignal(canvasRefs.demodulated.current, demodulatedSignal, '#ff7f00');
+      }
+      if (canvasRefs.demodulatedSingle.current) {
+        drawSignal(canvasRefs.demodulatedSingle.current, demodulatedSignal, '#ff7f00');
+      }
+    }
+  };
 
+  // Efecto para redibujar cuando cambien las señales
   useEffect(() => {
-    if (modulatedSignal && canvasRefs.modulated.current) {
-      drawSignal(canvasRefs.modulated.current, modulatedSignal, '#00ff7f');
-    }
-  }, [modulatedSignal]);
+    console.log('Signals updated, redrawing...');
+    redrawAllSignals();
+  }, [digitalSignal, modulatedSignal, demodulatedSignal]);
 
+  // Efecto para redibujar cuando se cambien las pestañas
   useEffect(() => {
-    if (demodulatedSignal && canvasRefs.demodulated.current) {
-      drawSignal(canvasRefs.demodulated.current, demodulatedSignal, '#ff7f00');
-    }
-  }, [demodulatedSignal]);
+    const timeout = setTimeout(() => {
+      redrawAllSignals();
+    }, 100);
+    
+    return () => clearTimeout(timeout);
+  }, []);
+
+  const handleTabChange = () => {
+    // Pequeño delay para asegurar que el canvas esté visible
+    setTimeout(() => {
+      redrawAllSignals();
+    }, 50);
+  };
 
   return (
     <Card className="bg-card/50 border-border glow-green">
@@ -113,7 +155,7 @@ export const SignalVisualization = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="combined" className="w-full">
+        <Tabs defaultValue="combined" className="w-full" onValueChange={handleTabChange}>
           <TabsList className="grid w-full grid-cols-4 bg-muted/50">
             <TabsTrigger value="combined">Combinado</TabsTrigger>
             <TabsTrigger value="digital">Digital</TabsTrigger>
@@ -171,30 +213,48 @@ export const SignalVisualization = ({
           </TabsContent>
           
           <TabsContent value="digital">
-            <canvas
-              ref={canvasRefs.digital}
-              width={600}
-              height={300}
-              className="w-full border border-border rounded bg-background/50"
-            />
+            <div className="space-y-2">
+              <Badge variant="outline" className="border-tech-cyan text-tech-cyan">
+                <Waves className="w-3 h-3 mr-1" />
+                Señal Digital
+              </Badge>
+              <canvas
+                ref={canvasRefs.digitalSingle}
+                width={600}
+                height={300}
+                className="w-full border border-border rounded bg-background/50"
+              />
+            </div>
           </TabsContent>
           
           <TabsContent value="modulated">
-            <canvas
-              ref={canvasRefs.modulated}
-              width={600}
-              height={300}
-              className="w-full border border-border rounded bg-background/50"
-            />
+            <div className="space-y-2">
+              <Badge variant="outline" className="border-tech-green text-tech-green">
+                <Activity className="w-3 h-3 mr-1" />
+                Señal Modulada
+              </Badge>
+              <canvas
+                ref={canvasRefs.modulatedSingle}
+                width={600}
+                height={300}
+                className="w-full border border-border rounded bg-background/50"
+              />
+            </div>
           </TabsContent>
           
           <TabsContent value="demodulated">
-            <canvas
-              ref={canvasRefs.demodulated}
-              width={600}
-              height={300}
-              className="w-full border border-border rounded bg-background/50"
-            />
+            <div className="space-y-2">
+              <Badge variant="outline" className="border-tech-orange text-tech-orange">
+                <Zap className="w-3 h-3 mr-1" />
+                Señal Demodulada
+              </Badge>
+              <canvas
+                ref={canvasRefs.demodulatedSingle}
+                width={600}
+                height={300}
+                className="w-full border border-border rounded bg-background/50"
+              />
+            </div>
           </TabsContent>
         </Tabs>
         
