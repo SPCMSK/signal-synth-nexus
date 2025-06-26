@@ -182,10 +182,10 @@ export const DocumentationPanel = ({ onClose }: DocumentationPanelProps) => {
                       <span className="font-semibold text-tech-green">Excelente:</span> BER = 0
                     </div>
                     <div className="p-2 bg-tech-cyan/10 rounded">
-                      <span className="font-semibold text-tech-cyan">Muy Buena:</span> BER < 0.001
+                      <span className="font-semibold text-tech-cyan">Muy Buena:</span> BER &lt; 0.001
                     </div>
                     <div className="p-2 bg-yellow-400/10 rounded">
-                      <span className="font-semibold text-yellow-400">Buena:</span> BER < 0.01
+                      <span className="font-semibold text-yellow-400">Buena:</span> BER &lt; 0.01
                     </div>
                     <div className="p-2 bg-destructive/10 rounded">
                       <span className="font-semibold text-destructive">Pobre:</span> BER ≥ 0.01
