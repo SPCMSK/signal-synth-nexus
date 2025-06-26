@@ -1,5 +1,5 @@
 
-import { Chip, Signal, Waves } from 'lucide-react';
+import { CircuitBoard, Signal, Waves } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export const Header = () => {
@@ -10,7 +10,7 @@ export const Header = () => {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <div className="relative">
-                <Chip className="w-8 h-8 text-tech-cyan glow" />
+                <CircuitBoard className="w-8 h-8 text-tech-cyan glow" />
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-tech-green rounded-full signal-animation"></div>
               </div>
               <div>

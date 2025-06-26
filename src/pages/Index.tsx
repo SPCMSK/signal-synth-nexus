@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Chip, Signal, Waves, Circle, Square } from 'lucide-react';
+import { CircuitBoard, Signal, Waves, Circle, Square } from 'lucide-react';
 import { ConfigPanel } from '@/components/ConfigPanel';
 import { SignalVisualization } from '@/components/SignalVisualization';
 import { ConstellationDiagram } from '@/components/ConstellationDiagram';
@@ -68,7 +68,7 @@ const Index = () => {
               {config.bitRate} bps
             </Badge>
             <Badge variant="outline" className="border-tech-purple text-tech-purple">
-              <Chip className="w-3 h-3 mr-1" />
+              <CircuitBoard className="w-3 h-3 mr-1" />
               SNR: {config.snrDb} dB
             </Badge>
           </div>
