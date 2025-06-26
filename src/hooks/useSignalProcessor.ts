@@ -184,7 +184,7 @@ export const useSignalProcessor = () => {
       // --- Generación de bits ---
       const bits = generateRandomBits(config.dataLength);
       // --- Parámetro didáctico: samplesPerBit ---
-      config.samplesPerBit = Math.max(50, Math.floor(1000 / config.bitRate));
+      config.samplesPerBit = Math.max(100, Math.floor(2000 / config.bitRate)); // Aumenta la resolución mínima
 
       // --- Señal digital NRZ ---
       const digitalTime: number[] = [];
@@ -198,10 +198,20 @@ export const useSignalProcessor = () => {
       setDigitalSignal({ time: digitalTime, amplitude: digitalAmplitude, label: 'Señal Digital' });
 
       // --- Señal portadora (carrier) ---
-      const carrierAmplitude: number[] = digitalTime.map((t) =>
-        config.carrierAmplitude * Math.cos(2 * Math.PI * config.carrierFreq * t)
-      );
-      setCarrierSignal({ time: digitalTime, amplitude: carrierAmplitude, label: 'Portadora' });
+      // Usar un rango de tiempo más fino para la portadora si la cantidad de muestras es baja
+      let carrierTime = digitalTime;
+      let carrierAmplitude: number[];
+      if (digitalTime.length < 500) {
+        // Si la señal es muy corta, genera una portadora de 2 ciclos para mostrar la forma de onda
+        const cycles = 2;
+        const points = 1000;
+        const T = 1 / config.carrierFreq;
+        carrierTime = Array.from({ length: points }, (_, i) => i * (cycles * T) / points);
+        carrierAmplitude = carrierTime.map((t) => config.carrierAmplitude * Math.cos(2 * Math.PI * config.carrierFreq * t));
+      } else {
+        carrierAmplitude = digitalTime.map((t) => config.carrierAmplitude * Math.cos(2 * Math.PI * config.carrierFreq * t));
+      }
+      setCarrierSignal({ time: carrierTime, amplitude: carrierAmplitude, label: 'Portadora' });
 
       // --- Modulación ---
       let modulatedAmplitude: number[] = [];

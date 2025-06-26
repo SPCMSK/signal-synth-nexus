@@ -81,8 +81,14 @@ export const SignalVisualization = ({
     // Rango de datos
     const minX = Math.min(...data.time);
     const maxX = Math.max(...data.time);
-    const minY = Math.min(...data.amplitude);
-    const maxY = Math.max(...data.amplitude);
+    // Para la portadora, fuerza el eje Y a [-A, A] para mejor visualización
+    let minY = Math.min(...data.amplitude);
+    let maxY = Math.max(...data.amplitude);
+    if (data.label === 'Portadora') {
+      const absA = Math.max(Math.abs(minY), Math.abs(maxY));
+      minY = -absA;
+      maxY = absA;
+    }
     // Grilla
     ctx.strokeStyle = 'rgba(0, 255, 255, 0.08)';
     ctx.lineWidth = 1;
