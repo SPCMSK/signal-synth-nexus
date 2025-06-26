@@ -175,25 +175,21 @@ const Index = () => {
           <div className="xl:col-span-3">
             <ConfigPanel config={config} onConfigChange={handleConfigChange} />
           </div>
-
           {/* Visualization Area */}
+          <div className="xl:col-span-6">
             <SignalVisualization
               digitalSignal={digitalSignal}
               carrierSignal={carrierSignal}
               modulatedSignal={modulatedSignal}
               demodulatedSignal={demodulatedSignal}
               isProcessing={isProcessing}
-              carrierFreq={config.carrierFreq}
-              carrierAmplitude={config.carrierAmplitude}
             />
-            
             <ConstellationDiagram
               data={constellationData}
               modulationType={config.modulationType}
               noiseEnabled={config.noiseEnabled}
             />
           </div>
-
           {/* Metrics and Export Panel */}
           <div className="xl:col-span-3 space-y-6">
             <MetricsPanel

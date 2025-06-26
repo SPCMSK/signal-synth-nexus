@@ -207,9 +207,9 @@ export const useSignalProcessor = () => {
         const points = 1000;
         const T = 1 / config.carrierFreq;
         carrierTime = Array.from({ length: points }, (_, i) => i * (cycles * T) / points);
-        carrierAmplitude = carrierTime.map((t) => config.carrierAmplitude * Math.cos(2 * Math.PI * config.carrierFreq * t));
+        carrierAmplitude = carrierTime.map((t) => config.carrierAmplitude * Math.sin(2 * Math.PI * config.carrierFreq * t));
       } else {
-        carrierAmplitude = digitalTime.map((t) => config.carrierAmplitude * Math.cos(2 * Math.PI * config.carrierFreq * t));
+        carrierAmplitude = digitalTime.map((t) => config.carrierAmplitude * Math.sin(2 * Math.PI * config.carrierFreq * t));
       }
       setCarrierSignal({ time: carrierTime, amplitude: carrierAmplitude, label: 'Portadora' });
 

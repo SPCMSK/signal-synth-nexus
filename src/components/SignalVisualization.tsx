@@ -16,8 +16,6 @@ interface SignalVisualizationProps {
   modulatedSignal: SignalData | null;
   demodulatedSignal: SignalData | null;
   isProcessing: boolean;
-  carrierFreq: number; // NUEVO: frecuencia de la portadora
-  carrierAmplitude: number; // NUEVO: amplitud de la portadora
 }
 
 // Visualización didáctica de señales para SimuMod Pro
@@ -30,9 +28,7 @@ export const SignalVisualization = ({
   carrierSignal,
   modulatedSignal,
   demodulatedSignal,
-  isProcessing,
-  carrierFreq,
-  carrierAmplitude
+  isProcessing
 }: SignalVisualizationProps) => {
   const canvasRefs = {
     digital: useRef<HTMLCanvasElement>(null),
@@ -74,68 +70,14 @@ export const SignalVisualization = ({
   };
 
   // Dibuja la señal y ejes
-  const drawSignal = (canvas: HTMLCanvasElement, data: SignalData | null, color: string, forceCarrier?: boolean, carrierFreq?: number, carrierAmplitude?: number) => {
+  const drawSignal = (canvas: HTMLCanvasElement, data: SignalData | null, color: string) => {
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx || !data || !data.time.length) return;
     const width = canvas.width;
     const height = canvas.height;
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
     ctx.fillRect(0, 0, width, height);
-    // Si es portadora y no hay datos o pocos puntos, dibuja onda con freq y amp reales
-    if ((forceCarrier || (data && data.label === 'Portadora' && data.time.length < 4)) || (!data && forceCarrier)) {
-      const freq = carrierFreq || 1000;
-      const amp = carrierAmplitude || 1;
-      const cycles = 2;
-      const points = 1000;
-      const T = 1 / freq;
-      const tArr = Array.from({ length: points }, (_, i) => i * (cycles * T) / points);
-      // CAMBIO: usar Math.sin en vez de Math.cos
-      const aArr = tArr.map(t => amp * Math.sin(2 * Math.PI * freq * t));
-      const minX = 0;
-      const maxX = tArr[tArr.length - 1];
-      const minY = -amp;
-      const maxY = amp;
-      // Grilla
-      ctx.strokeStyle = 'rgba(0, 255, 255, 0.08)';
-      ctx.lineWidth = 1;
-      for (let i = 0; i <= 10; i++) {
-        const x = 40 + ((width - 50) * i) / 10;
-        const y = 10 + ((height - 40) * i) / 10;
-        ctx.beginPath();
-        ctx.moveTo(x, 10);
-        ctx.lineTo(x, height - 30);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(40, y);
-        ctx.lineTo(width - 10, y);
-        ctx.stroke();
-      }
-      drawAxes(ctx, width, height, minX, maxX, minY, maxY);
-      ctx.save();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      tArr.forEach((t, index) => {
-        const x = 40 + ((t - minX) / (maxX - minX || 1)) * (width - 50);
-        const y = height - 30 - ((aArr[index] - minY) / (maxY - minY || 1)) * (height - 40);
-        if (index === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 10;
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-      ctx.restore();
-      // Leyenda
-      ctx.save();
-      ctx.fillStyle = color;
-      ctx.font = 'bold 12px monospace';
-      ctx.fillText('Portadora', width - 120, 20);
-      ctx.restore();
-      return;
-    }
-    if (!data || !data.time.length) return;
     // Rango de datos
     let minX = Math.min(...data.time);
     let maxX = Math.max(...data.time);
@@ -156,9 +98,7 @@ export const SignalVisualization = ({
       ctx.lineTo(width - 10, y);
       ctx.stroke();
     }
-    // Ejes y etiquetas
     drawAxes(ctx, width, height, minX, maxX, minY, maxY);
-    // Señal
     ctx.save();
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
@@ -210,7 +150,7 @@ export const SignalVisualization = ({
     }
     // Portadora: forzar onda con freq y amp reales si no hay datos o pocos puntos
     if (canvasRefs.carrier.current) {
-      drawSignal(canvasRefs.carrier.current, carrierSignal, '#007bff', !carrierSignal || (carrierSignal.time.length < 4), carrierFreq, carrierAmplitude);
+      drawSignal(canvasRefs.carrier.current, carrierSignal, '#007bff');
     }
     if (modulatedSignal && canvasRefs.modulated.current) {
       drawSignal(canvasRefs.modulated.current, modulatedSignal, '#00ff7f');
@@ -232,7 +172,7 @@ export const SignalVisualization = ({
     }
     // Portadora individual: forzar onda con freq y amp reales si no hay datos o pocos puntos
     if (canvasRefs.carrierSingle.current) {
-      drawSignal(canvasRefs.carrierSingle.current, carrierSignal, '#007bff', !carrierSignal || (carrierSignal.time.length < 4), carrierFreq, carrierAmplitude);
+      drawSignal(canvasRefs.carrierSingle.current, carrierSignal, '#007bff');
     }
     if (modulatedSignal && canvasRefs.modulatedSingle.current) {
       drawSignal(canvasRefs.modulatedSingle.current, modulatedSignal, '#00ff7f');
