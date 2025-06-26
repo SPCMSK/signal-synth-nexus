@@ -90,8 +90,7 @@ export const SignalVisualization = ({
       const points = 1000;
       const T = 1 / freq;
       const tArr = Array.from({ length: points }, (_, i) => i * (cycles * T) / points);
-      // CAMBIO: usar Math.sin en vez de Math.cos
-      const aArr = tArr.map(t => amp * Math.sin(2 * Math.PI * freq * t));
+      const aArr = tArr.map(t => amp * Math.cos(2 * Math.PI * freq * t));
       const minX = 0;
       const maxX = tArr[tArr.length - 1];
       const minY = -amp;
