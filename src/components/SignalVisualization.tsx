@@ -79,15 +79,44 @@ export const SignalVisualization = ({
     ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
     ctx.fillRect(0, 0, width, height);
     // Rango de datos
-    const minX = Math.min(...data.time);
-    const maxX = Math.max(...data.time);
-    // Para la portadora, fuerza el eje Y a [-A, A] para mejor visualización
+    let minX = Math.min(...data.time);
+    let maxX = Math.max(...data.time);
     let minY = Math.min(...data.amplitude);
     let maxY = Math.max(...data.amplitude);
-    if (data.label === 'Portadora') {
-      const absA = Math.max(Math.abs(minY), Math.abs(maxY));
-      minY = -absA;
-      maxY = absA;
+    // Si la señal es la portadora y tiene pocos puntos, genera una onda artificial para mostrar
+    if (data.label === 'Portadora' && data.time.length < 100) {
+      const cycles = 2;
+      const points = 1000;
+      const freq = 1000; // 1 kHz visible
+      const amp = 1;
+      const tArr = Array.from({ length: points }, (_, i) => i * (cycles / freq) / points);
+      const aArr = tArr.map(t => amp * Math.cos(2 * Math.PI * freq * t));
+      minX = 0;
+      maxX = tArr[tArr.length - 1];
+      minY = -amp;
+      maxY = amp;
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      tArr.forEach((t, index) => {
+        const x = 40 + ((t - minX) / (maxX - minX || 1)) * (width - 50);
+        const y = height - 30 - ((aArr[index] - minY) / (maxY - minY || 1)) * (height - 40);
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 10;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+      // Leyenda
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText(data.label, width - 120, 20);
+      ctx.restore();
+      return;
     }
     // Grilla
     ctx.strokeStyle = 'rgba(0, 255, 255, 0.08)';
