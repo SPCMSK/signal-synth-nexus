@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -165,7 +164,7 @@ const Index = () => {
         {/* Mensaje de advertencia didáctica */}
         {showConfigWarning && (
           <div className="my-2 p-3 rounded bg-yellow-100 text-yellow-800 border border-yellow-300 text-sm" role="alert">
-            <strong>Advertencia:</strong> La configuración actual puede no ser robusta para una simulación educativa óptima. Se recomienda usar al menos 8 bits y SNR > 7 dB para observar resultados representativos.
+            <strong>Advertencia:</strong> La configuración actual puede no ser robusta para una simulación educativa óptima. Se recomienda usar al menos 8 bits y SNR &gt; 7 dB para observar resultados representativos.
           </div>
         )}
 
