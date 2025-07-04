@@ -42,7 +42,7 @@ export const SignalVisualization = ({
   };
 
   const [tooltip, setTooltip] = useState<{ x: number; y: number; value: number | null; label: string } | null>(null);
-  const [timeUnit, setTimeUnit<'ms' | 'rad'>('ms'));
+  const [timeUnit, setTimeUnit] = useState<'ms' | 'rad'>('ms');
 
   const convertTimeUnit = (time: number[], unit: 'ms' | 'rad', freq: number = carrierFreq) => {
     if (unit === 'rad') {
@@ -319,8 +319,6 @@ export const SignalVisualization = ({
     }, 100);
   };
 
-  
-
   return (
     <Card className="bg-card/50 border-border glow-green" role="region" aria-label="Visualización de señales">
       <CardHeader>
@@ -412,8 +410,6 @@ export const SignalVisualization = ({
               </div>
             </div>
           </TabsContent>
-          
-          
           
           <TabsContent value="digital">
             <div className="space-y-2">

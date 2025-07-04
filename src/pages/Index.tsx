@@ -120,7 +120,7 @@ const Index = () => {
               <CircuitBoard className="w-3 h-3 mr-1" />
               SNR: {config.snrDb} dB
             </Badge>
-            {totalSimulations > 0 und (
+            {totalSimulations > 0 && (
               <Badge variant="outline" className="border-tech-orange text-tech-orange" title="Simulaciones realizadas">
                 <History className="w-3 h-3 mr-1" />
                 {totalSimulations} simulaciones
@@ -165,7 +165,7 @@ const Index = () => {
         {/* Mensaje de advertencia didáctica */}
         {showConfigWarning && (
           <div className="my-2 p-3 rounded bg-yellow-100 text-yellow-800 border border-yellow-300 text-sm" role="alert">
-            <strong>Advertencia:</strong> La configuración actual puede no ser robusta para una simulación educativa óptima. Se recomienda usar al menos 8 bits y SNR &gt; 7 dB para observar resultados representativos.
+            <strong>Advertencia:</strong> La configuración actual puede no ser robusta para una simulación educativa óptima. Se recomienda usar al menos 8 bits y SNR > 7 dB para observar resultados representativos.
           </div>
         )}
 
@@ -176,9 +176,25 @@ const Index = () => {
 
         {/* Layout mejorado con mejor distribución */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-          {/* Configuration Panel - Movido más a la derecha */}
-          <div className="xl:col-span-2">
-            <ConfigPanel config={config} onConfigChange={handleConfigChange} />
+          {/* Metrics and Export Panel - Movido más a la izquierda */}
+          <div className="xl:col-span-2 space-y-6">
+            <MetricsPanel
+              ber={ber}
+              config={config}
+              isProcessing={isProcessing}
+            />
+            
+            <ExportPanel
+              currentSimulation={{
+                digitalSignal,
+                modulatedSignal,
+                demodulatedSignal,
+                constellationData,
+                config,
+                ber
+              }}
+              simulationHistory={simulations}
+            />
           </div>
           
           {/* Visualization Area - Expandido */}
@@ -199,25 +215,9 @@ const Index = () => {
             />
           </div>
           
-          {/* Metrics and Export Panel - Movido más a la izquierda */}
-          <div className="xl:col-span-2 space-y-6">
-            <MetricsPanel
-              ber={ber}
-              config={config}
-              isProcessing={isProcessing}
-            />
-            
-            <ExportPanel
-              currentSimulation={{
-                digitalSignal,
-                modulatedSignal,
-                demodulatedSignal,
-                constellationData,
-                config,
-                ber
-              }}
-              simulationHistory={simulations}
-            />
+          {/* Configuration Panel - Movido más a la derecha */}
+          <div className="xl:col-span-2">
+            <ConfigPanel config={config} onConfigChange={handleConfigChange} />
           </div>
         </div>
 
