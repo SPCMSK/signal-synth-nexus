@@ -168,7 +168,7 @@ function generateConstellation(bits: number[], demodBits: number[], config: any)
 export const useSignalProcessor = () => {
   const [digitalSignal, setDigitalSignal] = useState<SignalData | null>(null);
   const [modulatedSignal, setModulatedSignal] = useState<SignalData | null>(null);
-  const [modulatedNoisySignal, setModulatedNoisySignal] = useState<SignalData | null>(null); // Paso intermedio
+  const [modulatedNoisySignal, setModulatedNoisySignal] = useState<SignalData | null>(null);
   const [demodulatedSignal, setDemodulatedSignal] = useState<SignalData | null>(null);
   const [constellationData, setConstellationData] = useState<{
     transmitted: ConstellationPoint[];
@@ -177,29 +177,27 @@ export const useSignalProcessor = () => {
   const [ber, setBER] = useState<BERData | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // --- Proceso principal de simulación ---
   const processSignal = useCallback(async (config: any) => {
     setIsProcessing(true);
     try {
       validateConfig(config);
-      // Simular delay de procesamiento
       await new Promise(resolve => setTimeout(resolve, 300));
 
-      // --- Generación de bits ---
+      // Generación de bits
       let bits: number[];
       if (config.bitSource === 'custom' && typeof config.customBits === 'string' && config.customBits.length >= 1) {
         bits = parseCustomBits(config.customBits).slice(0, config.dataLength);
-        // Si la secuencia es más corta que dataLength, completar con ceros
         if (bits.length < config.dataLength) {
           bits = bits.concat(Array(config.dataLength - bits.length).fill(0));
         }
       } else {
         bits = generateRandomBits(config.dataLength);
       }
-      // --- Parámetro didáctico: samplesPerBit ---
-      config.samplesPerBit = Math.max(100, Math.floor(2000 / config.bitRate)); // Aumenta la resolución mínima
 
-      // --- Señal digital NRZ ---
+      // Parámetro de muestreo mejorado
+      config.samplesPerBit = Math.max(200, Math.floor(4000 / config.bitRate));
+
+      // Señal digital NRZ
       const digitalTime: number[] = [];
       const digitalAmplitude: number[] = [];
       bits.forEach((bit, index) => {
@@ -210,7 +208,7 @@ export const useSignalProcessor = () => {
       });
       setDigitalSignal({ time: digitalTime, amplitude: digitalAmplitude, label: 'Señal Digital' });
 
-      // --- Modulación ---
+      // Modulación
       let modulatedAmplitude: number[] = [];
       if (config.modulationType === 'BPSK') {
         modulatedAmplitude = modulateBPSK(bits, digitalTime, config);
@@ -219,7 +217,7 @@ export const useSignalProcessor = () => {
       }
       setModulatedSignal({ time: digitalTime, amplitude: modulatedAmplitude, label: 'Señal Modulada' });
 
-      // --- Canal con ruido (opcional) ---
+      // Canal con ruido
       let noisyAmplitude = modulatedAmplitude;
       if (config.noiseEnabled) {
         noisyAmplitude = addGaussianNoise(modulatedAmplitude, config.snrDb);
@@ -228,7 +226,7 @@ export const useSignalProcessor = () => {
         setModulatedNoisySignal(null);
       }
 
-      // --- Demodulación coherente ---
+      // Demodulación coherente
       let demodBits: number[] = [];
       if (config.modulationType === 'BPSK') {
         demodBits = demodulateBPSK(noisyAmplitude, config);
@@ -236,7 +234,7 @@ export const useSignalProcessor = () => {
         demodBits = demodulateQPSK(noisyAmplitude, config);
       }
 
-      // --- Señal demodulada (NRZ) ---
+      // Señal demodulada
       const demodulatedTime: number[] = [];
       const demodulatedAmplitude: number[] = [];
       demodBits.forEach((bit, index) => {
@@ -247,15 +245,14 @@ export const useSignalProcessor = () => {
       });
       setDemodulatedSignal({ time: demodulatedTime, amplitude: demodulatedAmplitude, label: 'Señal Demodulada' });
 
-      // --- Constelación ---
+      // Constelación
       setConstellationData(generateConstellation(bits, demodBits, config));
 
-      // --- Cálculo de BER ---
+      // Cálculo de BER
       let errors = 0;
       if (config.modulationType === 'BPSK') {
         errors = demodBits.reduce((count, bit, idx) => count + (bit !== bits[idx] ? 1 : 0), 0);
       } else {
-        // QPSK: comparar por pares
         for (let i = 0; i < Math.floor(bits.length / 2); i++) {
           if (demodBits[i * 2] !== bits[i * 2] || demodBits[i * 2 + 1] !== bits[i * 2 + 1]) errors += 2;
         }
@@ -287,7 +284,7 @@ export const useSignalProcessor = () => {
   return {
     digitalSignal,
     modulatedSignal,
-    modulatedNoisySignal, // Paso intermedio expuesto
+    modulatedNoisySignal,
     demodulatedSignal,
     constellationData,
     ber,
