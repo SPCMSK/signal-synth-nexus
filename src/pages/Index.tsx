@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -176,11 +177,7 @@ const Index = () => {
             <ConfigPanel config={config} onConfigChange={handleConfigChange} />
           </div>
           {/* Visualization Area */}
-<<<<<<< HEAD
-          <div className="xl:col-span-6">
-=======
           <div className="xl:col-span-6 space-y-6">
->>>>>>> 0c0da5088c5d59f40f2321a03484d64ff3716c44
             <SignalVisualization
               digitalSignal={digitalSignal}
               modulatedSignal={modulatedSignal}
