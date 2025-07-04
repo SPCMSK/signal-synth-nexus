@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 
 // --- Tipos de datos para señales y resultados ---
@@ -24,14 +25,14 @@ interface BERData {
 // --- Validación de parámetros de entrada ---
 function validateConfig(config: any) {
   if (!config) throw new Error('Config no proporcionado');
-  if (typeof config.dataLength !== 'number' || config.dataLength < 3 || config.dataLength > 1000)
-    throw new Error('Longitud de datos inválida (3-1000)');
+  if (typeof config.dataLength !== 'number' || config.dataLength < 3 || config.dataLength > 16)
+    throw new Error('Longitud de datos inválida (3-16)');
   if (!['BPSK', 'QPSK'].includes(config.modulationType))
     throw new Error('Tipo de modulación inválido');
-  if (typeof config.bitRate !== 'number' || config.bitRate < 100 || config.bitRate > 10000)
-    throw new Error('Bit rate fuera de rango (100-10000)');
-  if (typeof config.carrierFreq !== 'number' || config.carrierFreq < 1000 || config.carrierFreq > 20000)
-    throw new Error('Frecuencia portadora fuera de rango (1000-20000 Hz)');
+  if (typeof config.bitRate !== 'number' || config.bitRate < 100 || config.bitRate > 100000)
+    throw new Error('Bit rate fuera de rango (100-100000)');
+  if (typeof config.carrierFreq !== 'number' || config.carrierFreq < 1000 || config.carrierFreq > 100000)
+    throw new Error('Frecuencia portadora fuera de rango (1000-100000 Hz)');
   if (typeof config.carrierAmplitude !== 'number' || config.carrierAmplitude < 0.1 || config.carrierAmplitude > 2.0)
     throw new Error('Amplitud portadora fuera de rango (0.1-2.0)');
   if (config.noiseEnabled && (typeof config.snrDb !== 'number' || config.snrDb < 0 || config.snrDb > 30))
@@ -43,8 +44,12 @@ function generateRandomBits(length: number): number[] {
   return Array.from({ length }, () => Math.random() > 0.5 ? 1 : 0);
 }
 
-// --- NUEVO: Función para convertir string de bits custom a array de números ---
+// --- Función para convertir string de bits custom a array de números ---
 function parseCustomBits(bits: string): number[] {
+  // Validar que solo contenga 0s y 1s
+  if (!/^[01]+$/.test(bits)) {
+    throw new Error('La secuencia personalizada solo puede contener 0s y 1s');
+  }
   return bits.split('').map(b => b === '1' ? 1 : 0);
 }
 
@@ -66,6 +71,7 @@ function addGaussianNoise(signal: number[], snrDb: number): number[] {
 function modulateBPSK(bits: number[], t: number[], config: any): number[] {
   return t.map((time, idx) => {
     const bitIndex = Math.floor(idx / config.samplesPerBit);
+    if (bitIndex >= bits.length) return 0;
     const phase = bits[bitIndex] === 1 ? 0 : Math.PI;
     return config.carrierAmplitude * Math.cos(2 * Math.PI * config.carrierFreq * time + phase);
   });
@@ -88,7 +94,6 @@ function modulateQPSK(bits: number[], t: number[], config: any): number[] {
 
 // --- Demodulación coherente BPSK ---
 function demodulateBPSK(received: number[], config: any): number[] {
-  // Integración por bit para decisión por umbral
   const bits: number[] = [];
   for (let i = 0; i < received.length; i += config.samplesPerBit) {
     const segment = received.slice(i, i + config.samplesPerBit);
@@ -100,21 +105,17 @@ function demodulateBPSK(received: number[], config: any): number[] {
 
 // --- Demodulación coherente QPSK ---
 function demodulateQPSK(received: number[], config: any): number[] {
-  // Integración por símbolo (2 bits)
   const bits: number[] = [];
   for (let i = 0; i < received.length; i += 2 * config.samplesPerBit) {
     const segment = received.slice(i, i + 2 * config.samplesPerBit);
-    // Proyección sobre portadoras I y Q
     let iSum = 0, qSum = 0;
     for (let j = 0; j < segment.length; j++) {
       const t = (i + j) / (config.bitRate * config.samplesPerBit);
       iSum += segment[j] * Math.cos(2 * Math.PI * config.carrierFreq * t);
       qSum += segment[j] * Math.sin(2 * Math.PI * config.carrierFreq * t);
     }
-    // Decisión por cuadrante
     const iBit = iSum >= 0 ? 1 : 0;
     const qBit = qSum >= 0 ? 1 : 0;
-    // Mapeo inverso según convención
     if (iBit === 1 && qBit === 1) bits.push(0, 0);
     else if (iBit === 0 && qBit === 1) bits.push(0, 1);
     else if (iBit === 0 && qBit === 0) bits.push(1, 1);
@@ -128,13 +129,13 @@ function generateConstellation(bits: number[], demodBits: number[], config: any)
   const transmitted: ConstellationPoint[] = [];
   const received: ConstellationPoint[] = [];
   const maxPoints = Math.min(100, config.modulationType === 'BPSK' ? bits.length : Math.floor(bits.length / 2));
+  
   for (let i = 0; i < maxPoints; i++) {
     if (config.modulationType === 'BPSK') {
       const tx = { i: bits[i] === 1 ? 1 : -1, q: 0, symbol: bits[i].toString(), isError: false };
       transmitted.push(tx);
       const rx = { ...tx };
       rx.isError = demodBits[i] !== bits[i];
-      // Para visualización, dispersión artificial si hay ruido
       if (config.noiseEnabled) {
         const noiseScale = Math.max(0.1, 1 - config.snrDb / 30);
         rx.i += (Math.random() - 0.5) * noiseScale;
@@ -186,16 +187,15 @@ export const useSignalProcessor = () => {
       // Generación de bits
       let bits: number[];
       if (config.bitSource === 'custom' && typeof config.customBits === 'string' && config.customBits.length >= 1) {
-        bits = parseCustomBits(config.customBits).slice(0, config.dataLength);
-        if (bits.length < config.dataLength) {
-          bits = bits.concat(Array(config.dataLength - bits.length).fill(0));
-        }
+        bits = parseCustomBits(config.customBits);
+        // Ajustar dataLength para que coincida con los bits personalizados
+        config.dataLength = bits.length;
       } else {
         bits = generateRandomBits(config.dataLength);
       }
 
       // Parámetro de muestreo mejorado
-      config.samplesPerBit = Math.max(200, Math.floor(4000 / config.bitRate));
+      config.samplesPerBit = Math.max(100, Math.floor(2000 / config.bitRate));
 
       // Señal digital NRZ
       const digitalTime: number[] = [];
@@ -270,7 +270,6 @@ export const useSignalProcessor = () => {
       setDemodulatedSignal(null);
       setConstellationData(null);
       setBER(null);
-      // Log detallado para debugging educativo
       if (error instanceof Error) {
         console.error('Error en procesamiento de señal:', error.message);
       } else {

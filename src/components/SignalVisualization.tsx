@@ -1,8 +1,8 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Waves, Activity, Zap, Info } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Waves, Activity, Zap, Info, Clock } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface SignalData {
@@ -42,42 +42,103 @@ export const SignalVisualization = ({
   };
 
   const [tooltip, setTooltip] = useState<{ x: number; y: number; value: number | null; label: string } | null>(null);
+  const [timeUnit, setTimeUnit<'ms' | 'rad'>('ms'));
 
-  const drawAxes = (ctx: CanvasRenderingContext2D, width: number, height: number, minX: number, maxX: number, minY: number, maxY: number) => {
+  const convertTimeUnit = (time: number[], unit: 'ms' | 'rad', freq: number = carrierFreq) => {
+    if (unit === 'rad') {
+      return time.map(t => 2 * Math.PI * freq * t);
+    }
+    return time.map(t => t * 1000); // Convertir a milisegundos
+  };
+
+  const getTimeLabel = (unit: 'ms' | 'rad') => {
+    return unit === 'ms' ? 'Tiempo (ms)' : 'Fase (rad)';
+  };
+
+  const formatTimeValue = (value: number, unit: 'ms' | 'rad') => {
+    if (unit === 'rad') {
+      const piValue = value / Math.PI;
+      if (Math.abs(piValue - Math.round(piValue)) < 0.1) {
+        const rounded = Math.round(piValue);
+        if (rounded === 0) return '0';
+        if (rounded === 1) return 'π';
+        if (rounded === -1) return '-π';
+        if (rounded === 2) return '2π';
+        if (rounded === -2) return '-2π';
+        return `${rounded}π`;
+      }
+      return `${piValue.toFixed(2)}π`;
+    }
+    return `${value.toFixed(3)} ms`;
+  };
+
+  const drawAxes = (ctx: CanvasRenderingContext2D, width: number, height: number, minX: number, maxX: number, minY: number, maxY: number, unit: 'ms' | 'rad' = 'ms') => {
     ctx.save();
     ctx.strokeStyle = 'rgba(200,200,200,0.3)';
     ctx.lineWidth = 1;
+    
+    // Eje X
     ctx.beginPath();
-    ctx.moveTo(40, height - 30);
-    ctx.lineTo(width - 10, height - 30);
+    ctx.moveTo(50, height - 40);
+    ctx.lineTo(width - 20, height - 40);
     ctx.stroke();
+    
+    // Eje Y
     ctx.beginPath();
-    ctx.moveTo(40, 10);
-    ctx.lineTo(40, height - 30);
+    ctx.moveTo(50, 20);
+    ctx.lineTo(50, height - 40);
     ctx.stroke();
+    
+    // Etiquetas
     ctx.fillStyle = '#aaa';
     ctx.font = '10px monospace';
-    ctx.fillText(minX.toFixed(3), 40, height - 15);
-    ctx.fillText(maxX.toFixed(3), width - 40, height - 15);
-    ctx.fillText(maxY.toFixed(2), 5, 20);
-    ctx.fillText(minY.toFixed(2), 5, height - 35);
+    ctx.textAlign = 'center';
+    
+    // Etiquetas del eje X
+    const xSteps = 5;
+    for (let i = 0; i <= xSteps; i++) {
+      const x = 50 + (i * (width - 70)) / xSteps;
+      const timeValue = minX + (i * (maxX - minX)) / xSteps;
+      ctx.fillText(formatTimeValue(timeValue, unit), x, height - 25);
+    }
+    
+    // Etiquetas del eje Y
+    ctx.textAlign = 'right';
+    ctx.fillText(maxY.toFixed(2), 45, 25);
+    ctx.fillText(minY.toFixed(2), 45, height - 45);
+    ctx.fillText('0', 45, height/2);
+    
+    // Títulos de ejes
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(getTimeLabel(unit), width/2, height - 5);
+    
+    ctx.save();
+    ctx.translate(15, height/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.fillText('Amplitud (V)', 0, 0);
+    ctx.restore();
+    
     ctx.restore();
   };
 
-  const drawSignal = (canvas: HTMLCanvasElement, data: SignalData | null, color: string) => {
+  const drawSignal = (canvas: HTMLCanvasElement, data: SignalData | null, color: string, unit: 'ms' | 'rad' = 'ms') => {
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx || !data || !data.time.length) return;
+    
     const width = canvas.width;
     const height = canvas.height;
     
+    // Limpiar canvas completamente
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
     ctx.fillRect(0, 0, width, height);
     
-    if (!data || !data.time.length) return;
-    
-    const minX = Math.min(...data.time);
-    const maxX = Math.max(...data.time);
+    // Convertir tiempo según la unidad
+    const convertedTime = convertTimeUnit(data.time, unit, carrierFreq);
+    const minX = Math.min(...convertedTime);
+    const maxX = Math.max(...convertedTime);
     const minY = Math.min(...data.amplitude);
     const maxY = Math.max(...data.amplitude);
     
@@ -85,28 +146,29 @@ export const SignalVisualization = ({
     ctx.strokeStyle = 'rgba(0, 255, 255, 0.08)';
     ctx.lineWidth = 1;
     for (let i = 0; i <= 10; i++) {
-      const x = 40 + ((width - 50) * i) / 10;
-      const y = 10 + ((height - 40) * i) / 10;
+      const x = 50 + ((width - 70) * i) / 10;
+      const y = 20 + ((height - 60) * i) / 10;
       ctx.beginPath();
-      ctx.moveTo(x, 10);
-      ctx.lineTo(x, height - 30);
+      ctx.moveTo(x, 20);
+      ctx.lineTo(x, height - 40);
       ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(40, y);
-      ctx.lineTo(width - 10, y);
+      ctx.moveTo(50, y);
+      ctx.lineTo(width - 20, y);
       ctx.stroke();
     }
     
-    drawAxes(ctx, width, height, minX, maxX, minY, maxY);
+    drawAxes(ctx, width, height, minX, maxX, minY, maxY, unit);
     
+    // Dibujar señal
     ctx.save();
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     ctx.beginPath();
     
-    data.time.forEach((time, index) => {
-      const x = 40 + ((time - minX) / (maxX - minX || 1)) * (width - 50);
-      const y = height - 30 - ((data.amplitude[index] - minY) / (maxY - minY || 1)) * (height - 40);
+    convertedTime.forEach((time, index) => {
+      const x = 50 + ((time - minX) / (maxX - minX || 1)) * (width - 70);
+      const y = height - 40 - ((data.amplitude[index] - minY) / (maxY - minY || 1)) * (height - 60);
       if (index === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
@@ -117,19 +179,22 @@ export const SignalVisualization = ({
     ctx.shadowBlur = 0;
     ctx.restore();
     
+    // Etiqueta de la señal
     ctx.save();
     ctx.fillStyle = color;
     ctx.font = 'bold 12px monospace';
-    ctx.fillText(data.label, width - 120, 20);
+    ctx.fillText(data.label, width - 150, 35);
     ctx.restore();
   };
 
-  const drawCarrier = (canvas: HTMLCanvasElement, color: string) => {
+  const drawCarrier = (canvas: HTMLCanvasElement, color: string, unit: 'ms' | 'rad' = 'ms') => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    
     const width = canvas.width;
     const height = canvas.height;
     
+    // Limpiar canvas completamente
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
     ctx.fillRect(0, 0, width, height);
@@ -138,50 +203,54 @@ export const SignalVisualization = ({
     let aArr: number[] = [];
     let minX = 0;
     let maxX = 1;
-    let minY = -carrierAmplitude;
-    let maxY = carrierAmplitude;
     
     if (digitalSignal && digitalSignal.time.length > 1) {
       minX = Math.min(...digitalSignal.time);
       maxX = Math.max(...digitalSignal.time);
-      const N = Math.min(digitalSignal.time.length, 2000);
-      tArr = Array.from({ length: N }, (_, i) => minX + (i * (maxX - minX)) / (N - 1));
-      aArr = tArr.map(t => carrierAmplitude * Math.cos(2 * Math.PI * carrierFreq * t));
     } else {
       const cycles = 3;
-      const points = 1000;
       const T = 1 / carrierFreq;
       maxX = cycles * T;
-      tArr = Array.from({ length: points }, (_, i) => i * maxX / (points - 1));
-      aArr = tArr.map(t => carrierAmplitude * Math.cos(2 * Math.PI * carrierFreq * t));
     }
     
-    // Grilla
+    const points = 1000;
+    tArr = Array.from({ length: points }, (_, i) => minX + (i * (maxX - minX)) / (points - 1));
+    aArr = tArr.map(t => carrierAmplitude * Math.cos(2 * Math.PI * carrierFreq * t));
+    
+    // Convertir tiempo según la unidad
+    const convertedTime = convertTimeUnit(tArr, unit, carrierFreq);
+    const minXConverted = Math.min(...convertedTime);
+    const maxXConverted = Math.max(...convertedTime);
+    const minY = -carrierAmplitude;
+    const maxY = carrierAmplitude;
+    
+    // Grilla y ejes
     ctx.strokeStyle = 'rgba(0, 255, 255, 0.08)';
     ctx.lineWidth = 1;
     for (let i = 0; i <= 10; i++) {
-      const x = 40 + ((width - 50) * i) / 10;
-      const y = 10 + ((height - 40) * i) / 10;
+      const x = 50 + ((width - 70) * i) / 10;
+      const y = 20 + ((height - 60) * i) / 10;
       ctx.beginPath();
-      ctx.moveTo(x, 10);
-      ctx.lineTo(x, height - 30);
+      ctx.moveTo(x, 20);
+      ctx.lineTo(x, height - 40);
       ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(40, y);
-      ctx.lineTo(width - 10, y);
+      ctx.moveTo(50, y);
+      ctx.lineTo(width - 20, y);
       ctx.stroke();
     }
     
-    drawAxes(ctx, width, height, minX, maxX, minY, maxY);
+    drawAxes(ctx, width, height, minXConverted, maxXConverted, minY, maxY, unit);
     
+    // Dibujar portadora
     ctx.save();
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     ctx.beginPath();
     
-    tArr.forEach((t, index) => {
-      const x = 40 + ((t - minX) / (maxX - minX || 1)) * (width - 50);
-      const y = height - 30 - ((aArr[index] - minY) / (maxY - minY || 1)) * (height - 40);
+    convertedTime.forEach((time, index) => {
+      const x = 50 + ((time - minXConverted) / (maxXConverted - minXConverted || 1)) * (width - 70);
+      const y = height - 40 - ((aArr[index] - minY) / (maxY - minY || 1)) * (height - 60);
       if (index === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
@@ -192,10 +261,11 @@ export const SignalVisualization = ({
     ctx.shadowBlur = 0;
     ctx.restore();
     
+    // Etiqueta
     ctx.save();
     ctx.fillStyle = color;
     ctx.font = 'bold 12px monospace';
-    ctx.fillText('Portadora', width - 120, 20);
+    ctx.fillText('Portadora', width - 150, 35);
     ctx.restore();
   };
 
@@ -209,71 +279,69 @@ export const SignalVisualization = ({
   const redrawAllSignals = () => {
     // Dibujar en vista combinada
     if (digitalSignal && canvasRefs.digital.current) {
-      drawSignal(canvasRefs.digital.current, digitalSignal, '#00ffff');
+      drawSignal(canvasRefs.digital.current, digitalSignal, '#00ffff', timeUnit);
     }
     if (showCarrier && canvasRefs.carrier.current) {
-      drawCarrier(canvasRefs.carrier.current, '#007bff');
+      drawCarrier(canvasRefs.carrier.current, '#007bff', timeUnit);
     }
     if (modulatedSignal && canvasRefs.modulated.current) {
-      drawSignal(canvasRefs.modulated.current, modulatedSignal, '#00ff7f');
+      drawSignal(canvasRefs.modulated.current, modulatedSignal, '#00ff7f', timeUnit);
     }
     if (demodulatedSignal && canvasRefs.demodulated.current) {
-      drawSignal(canvasRefs.demodulated.current, demodulatedSignal, '#ff7f00');
+      drawSignal(canvasRefs.demodulated.current, demodulatedSignal, '#ff7f00', timeUnit);
     }
     
     // Dibujar en vistas individuales
     if (digitalSignal && canvasRefs.digitalSingle.current) {
-      drawSignal(canvasRefs.digitalSingle.current, digitalSignal, '#00ffff');
+      drawSignal(canvasRefs.digitalSingle.current, digitalSignal, '#00ffff', timeUnit);
     }
     if (showCarrier && canvasRefs.carrierSingle.current) {
-      drawCarrier(canvasRefs.carrierSingle.current, '#007bff');
+      drawCarrier(canvasRefs.carrierSingle.current, '#007bff', timeUnit);
     }
     if (modulatedSignal && canvasRefs.modulatedSingle.current) {
-      drawSignal(canvasRefs.modulatedSingle.current, modulatedSignal, '#00ff7f');
+      drawSignal(canvasRefs.modulatedSingle.current, modulatedSignal, '#00ff7f', timeUnit);
     }
     if (demodulatedSignal && canvasRefs.demodulatedSingle.current) {
-      drawSignal(canvasRefs.demodulatedSingle.current, demodulatedSignal, '#ff7f00');
+      drawSignal(canvasRefs.demodulatedSingle.current, demodulatedSignal, '#ff7f00', timeUnit);
     }
   };
 
   useEffect(() => {
-    redrawAllSignals();
-  }, [digitalSignal, modulatedSignal, demodulatedSignal, showCarrier, carrierFreq, carrierAmplitude]);
+    const timer = setTimeout(() => {
+      redrawAllSignals();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [digitalSignal, modulatedSignal, demodulatedSignal, showCarrier, carrierFreq, carrierAmplitude, timeUnit]);
 
   const handleTabChange = () => {
     setTimeout(() => {
       redrawAllSignals();
-    }, 50);
+    }, 100);
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement, MouseEvent>, data: SignalData | null) => {
-    if (!data) return;
-    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const width = rect.width;
-    const minX = Math.min(...data.time);
-    const maxX = Math.max(...data.time);
-    const t = minX + ((x - 40) / (width - 50)) * (maxX - minX);
-    let idx = data.time.findIndex((tt) => tt >= t);
-    if (idx === -1) idx = data.time.length - 1;
-    setTooltip({ x, y, value: data.amplitude[idx], label: data.label });
-  };
-
-  const handleMouseLeave = () => setTooltip(null);
+  
 
   return (
     <Card className="bg-card/50 border-border glow-green" role="region" aria-label="Visualización de señales">
       <CardHeader>
-        <CardTitle className="flex items-center text-tech-green">
-          <Activity className="w-5 h-5 mr-2" />
-          Visualización de Señales
-          <span className="relative group ml-2">
-            <Info className="w-4 h-4" />
-            <span className="absolute left-1/2 -translate-x-1/2 mt-2 w-64 px-2 py-1 rounded bg-black/80 text-white text-xs opacity-0 group-hover:opacity-100 pointer-events-none z-20">
-              Visualiza la evolución temporal de las señales digitales y moduladas
-            </span>
-          </span>
+        <CardTitle className="flex items-center justify-between text-tech-green">
+          <div className="flex items-center">
+            <Activity className="w-5 h-5 mr-2" />
+            Visualización de Señales
+            <Info className="w-4 h-4 ml-2" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            <Select value={timeUnit} onValueChange={(value: 'ms' | 'rad') => setTimeUnit(value)}>
+              <SelectTrigger className="w-20 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ms">ms</SelectItem>
+                <SelectItem value="rad">rad</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -295,8 +363,8 @@ export const SignalVisualization = ({
                 </Badge>
                 <canvas
                   ref={canvasRefs.digital}
-                  width={600}
-                  height={120}
+                  width={800}
+                  height={150}
                   className="w-full border border-border rounded bg-background/50"
                 />
                 {!digitalSignal && renderEmpty('la señal digital')}
@@ -309,8 +377,8 @@ export const SignalVisualization = ({
                 </Badge>
                 <canvas
                   ref={canvasRefs.carrier}
-                  width={600}
-                  height={120}
+                  width={800}
+                  height={150}
                   className="w-full border border-border rounded bg-background/50"
                 />
               </div>
@@ -322,8 +390,8 @@ export const SignalVisualization = ({
                 </Badge>
                 <canvas
                   ref={canvasRefs.modulated}
-                  width={600}
-                  height={120}
+                  width={800}
+                  height={150}
                   className="w-full border border-border rounded bg-background/50"
                 />
                 {!modulatedSignal && renderEmpty('la señal modulada')}
@@ -336,8 +404,8 @@ export const SignalVisualization = ({
                 </Badge>
                 <canvas
                   ref={canvasRefs.demodulated}
-                  width={600}
-                  height={120}
+                  width={800}
+                  height={150}
                   className="w-full border border-border rounded bg-background/50"
                 />
                 {!demodulatedSignal && renderEmpty('la señal demodulada')}
@@ -345,31 +413,21 @@ export const SignalVisualization = ({
             </div>
           </TabsContent>
           
+          
+          
           <TabsContent value="digital">
             <div className="space-y-2">
               <Badge variant="outline" className="border-tech-cyan text-tech-cyan">
                 <Waves className="w-3 h-3 mr-1" />
                 Señal Digital
               </Badge>
-              <div className="relative">
-                <canvas
-                  ref={canvasRefs.digitalSingle}
-                  width={600}
-                  height={300}
-                  className="w-full border border-border rounded bg-background/50"
-                  onMouseMove={(e) => handleMouseMove(e, digitalSignal)}
-                  onMouseLeave={handleMouseLeave}
-                />
-                {!digitalSignal && renderEmpty('la señal digital')}
-                {tooltip && tooltip.label === 'Señal Digital' && (
-                  <div
-                    className="absolute z-10 px-2 py-1 text-xs bg-black/80 text-white rounded"
-                    style={{ left: tooltip.x + 10, top: tooltip.y }}
-                  >
-                    Amplitud: {tooltip.value?.toFixed(2)}
-                  </div>
-                )}
-              </div>
+              <canvas
+                ref={canvasRefs.digitalSingle}
+                width={800}
+                height={400}
+                className="w-full border border-border rounded bg-background/50"
+              />
+              {!digitalSignal && renderEmpty('la señal digital')}
             </div>
           </TabsContent>
           
@@ -381,8 +439,8 @@ export const SignalVisualization = ({
               </Badge>
               <canvas
                 ref={canvasRefs.carrierSingle}
-                width={600}
-                height={300}
+                width={800}
+                height={400}
                 className="w-full border border-border rounded bg-background/50"
               />
             </div>
@@ -394,25 +452,13 @@ export const SignalVisualization = ({
                 <Activity className="w-3 h-3 mr-1" />
                 Señal Modulada
               </Badge>
-              <div className="relative">
-                <canvas
-                  ref={canvasRefs.modulatedSingle}
-                  width={600}
-                  height={300}
-                  className="w-full border border-border rounded bg-background/50"
-                  onMouseMove={(e) => handleMouseMove(e, modulatedSignal)}
-                  onMouseLeave={handleMouseLeave}
-                />
-                {!modulatedSignal && renderEmpty('la señal modulada')}
-                {tooltip && tooltip.label === 'Señal Modulada' && (
-                  <div
-                    className="absolute z-10 px-2 py-1 text-xs bg-black/80 text-white rounded"
-                    style={{ left: tooltip.x + 10, top: tooltip.y }}
-                  >
-                    Amplitud: {tooltip.value?.toFixed(2)}
-                  </div>
-                )}
-              </div>
+              <canvas
+                ref={canvasRefs.modulatedSingle}
+                width={800}
+                height={400}
+                className="w-full border border-border rounded bg-background/50"
+              />
+              {!modulatedSignal && renderEmpty('la señal modulada')}
             </div>
           </TabsContent>
           
@@ -422,25 +468,13 @@ export const SignalVisualization = ({
                 <Zap className="w-3 h-3 mr-1" />
                 Señal Demodulada
               </Badge>
-              <div className="relative">
-                <canvas
-                  ref={canvasRefs.demodulatedSingle}
-                  width={600}
-                  height={300}
-                  className="w-full border border-border rounded bg-background/50"
-                  onMouseMove={(e) => handleMouseMove(e, demodulatedSignal)}
-                  onMouseLeave={handleMouseLeave}
-                />
-                {!demodulatedSignal && renderEmpty('la señal demodulada')}
-                {tooltip && tooltip.label === 'Señal Demodulada' && (
-                  <div
-                    className="absolute z-10 px-2 py-1 text-xs bg-black/80 text-white rounded"
-                    style={{ left: tooltip.x + 10, top: tooltip.y }}
-                  >
-                    Amplitud: {tooltip.value?.toFixed(2)}
-                  </div>
-                )}
-              </div>
+              <canvas
+                ref={canvasRefs.demodulatedSingle}
+                width={800}
+                height={400}
+                className="w-full border border-border rounded bg-background/50"
+              />
+              {!demodulatedSignal && renderEmpty('la señal demodulada')}
             </div>
           </TabsContent>
         </Tabs>

@@ -1,7 +1,3 @@
-// Panel de configuración de parámetros para SimuMod Pro
-// -----------------------------------------------------
-// Permite ajustar los parámetros de la simulación con validación, feedback y ayuda didáctica.
-// Incluye accesibilidad, advertencias globales y comentarios educativos.
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +5,7 @@ import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Settings, Zap, Radio, Volume2, Info, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
@@ -22,8 +19,8 @@ interface ConfigPanelProps {
     snrDb: number;
     noiseEnabled: boolean;
     dataLength: number;
-    bitSource?: 'random' | 'custom'; // NUEVO: fuente de bits
-    customBits?: string; // NUEVO: secuencia personalizada
+    bitSource?: 'random' | 'custom';
+    customBits?: string;
   };
   onConfigChange: (config: any) => void;
 }
@@ -33,16 +30,13 @@ const PARAM_LIMITS = {
   carrierFreq: { min: 1000, max: 100000 },
   carrierAmplitude: { min: 0.1, max: 2.0 },
   snrDb: { min: 0, max: 30 },
-  dataLength: { min: 3, max: 64 },
+  dataLength: { min: 3, max: 16 },
 };
 
 export const ConfigPanel = ({ config, onConfigChange }: ConfigPanelProps) => {
-  // Estado para feedback visual
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  // Estado local para bits custom
   const [customBits, setCustomBits] = useState(config.customBits || '');
 
-  // Validación inmediata de parámetros
   const validate = (key: string, value: any) => {
     let err = '';
     if (key === 'bitRate' && (value < PARAM_LIMITS.bitRate.min || value > PARAM_LIMITS.bitRate.max)) {
@@ -78,7 +72,6 @@ export const ConfigPanel = ({ config, onConfigChange }: ConfigPanelProps) => {
     return err === '';
   };
 
-  // Actualización robusta de configuración
   const updateConfig = (key: string, value: any) => {
     let newConfig = { ...config, [key]: value };
     if (key === 'modulationType' && value === 'QPSK' && newConfig.dataLength % 2 !== 0) {
@@ -92,10 +85,15 @@ export const ConfigPanel = ({ config, onConfigChange }: ConfigPanelProps) => {
     onConfigChange(newConfig);
   };
 
-  // Validación global para deshabilitar simulación si hay errores
+  const handleInputChange = (key: string, value: string) => {
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue)) {
+      updateConfig(key, numValue);
+    }
+  };
+
   const hasErrors = Object.values(errors).some((e) => e);
 
-  // Sugerencias educativas según configuración
   const educationalTip = () => {
     if (config.dataLength < 4) return 'Para observar patrones claros, se recomienda usar al menos 4 bits.';
     if (config.noiseEnabled && config.snrDb < 7) return 'Un SNR bajo puede dificultar la interpretación de resultados.';
@@ -104,48 +102,51 @@ export const ConfigPanel = ({ config, onConfigChange }: ConfigPanelProps) => {
   };
 
   return (
-    <Card className="bg-card/50 border-border glow" role="region" aria-label="Panel de configuración de simulación">
+    <Card className="bg-card/50 border-border glow h-fit" role="region" aria-label="Panel de configuración de simulación">
       <CardHeader>
-        <CardTitle className="flex items-center text-tech-cyan">
-          <Settings className="w-5 h-5 mr-2" aria-label="Icono de configuración" />
+        <CardTitle className="flex items-center text-tech-cyan text-sm">
+          <Settings className="w-4 h-4 mr-2" />
           Configuración
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Advertencia global si hay errores */}
+      <CardContent className="space-y-4">
         {hasErrors && (
           <div className="flex items-center gap-2 p-2 bg-yellow-100 border border-yellow-300 rounded text-yellow-800 text-xs" role="alert">
-            <AlertTriangle className="w-4 h-4" />
-            <span>Corrige los parámetros resaltados para poder simular correctamente.</span>
+            <AlertTriangle className="w-3 h-3" />
+            <span>Corrige los parámetros resaltados.</span>
           </div>
         )}
-        {/* Sugerencia educativa */}
+        
         {educationalTip() && (
           <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded text-blue-800 text-xs" role="note">
-            <Info className="w-4 h-4" />
+            <Info className="w-3 h-3" />
             <span>{educationalTip()}</span>
           </div>
         )}
 
         {/* Bit Rate */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium text-tech-cyan flex items-center gap-1">
+          <Label className="text-xs font-medium text-tech-cyan flex items-center gap-1">
             Bit Rate: {config.bitRate} bps
-            <span title="Velocidad de transmisión de bits por segundo. Afecta la resolución temporal.">
-              <Info className="w-3 h-3" />
-            </span>
+            <Info className="w-3 h-3" />
           </Label>
-          <Slider
-            value={[config.bitRate]}
-            onValueChange={([value]) => updateConfig('bitRate', value)}
-            max={PARAM_LIMITS.bitRate.max}
-            min={PARAM_LIMITS.bitRate.min}
-            step={100}
-            className="tech-slider"
-          />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{PARAM_LIMITS.bitRate.min} bps</span>
-            <span>{PARAM_LIMITS.bitRate.max / 1000}k bps</span>
+          <div className="flex gap-2">
+            <Slider
+              value={[config.bitRate]}
+              onValueChange={([value]) => updateConfig('bitRate', value)}
+              max={PARAM_LIMITS.bitRate.max}
+              min={PARAM_LIMITS.bitRate.min}
+              step={500}
+              className="flex-1"
+            />
+            <Input
+              type="number"
+              value={config.bitRate}
+              onChange={(e) => handleInputChange('bitRate', e.target.value)}
+              className="w-20 text-xs"
+              min={PARAM_LIMITS.bitRate.min}
+              max={PARAM_LIMITS.bitRate.max}
+            />
           </div>
           {errors.bitRate && <div className="text-xs text-red-500">{errors.bitRate}</div>}
         </div>
@@ -154,22 +155,20 @@ export const ConfigPanel = ({ config, onConfigChange }: ConfigPanelProps) => {
 
         {/* Modulation Type */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium text-tech-green flex items-center gap-1">
+          <Label className="text-xs font-medium text-tech-green flex items-center gap-1">
             Tipo de Modulación
-            <span title="BPSK: 1 bit/símbolo. QPSK: 2 bits/símbolo. QPSK requiere longitud de datos par.">
-              <Info className="w-3 h-3" />
-            </span>
+            <Info className="w-3 h-3" />
           </Label>
           <Select
             value={config.modulationType}
             onValueChange={(value) => updateConfig('modulationType', value)}
           >
-            <SelectTrigger className="bg-input border-border">
+            <SelectTrigger className="bg-input border-border text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="BPSK">BPSK (Binary Phase Shift Keying)</SelectItem>
-              <SelectItem value="QPSK">QPSK (Quadrature Phase Shift Keying)</SelectItem>
+              <SelectItem value="BPSK">BPSK</SelectItem>
+              <SelectItem value="QPSK">QPSK</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -178,48 +177,57 @@ export const ConfigPanel = ({ config, onConfigChange }: ConfigPanelProps) => {
 
         {/* Carrier Frequency */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium text-tech-purple flex items-center gap-1">
-            <Radio className="w-4 h-4 inline mr-1" />
-            Frecuencia Portadora: {config.carrierFreq} Hz
-            <span title="Frecuencia de la onda portadora. Afecta la forma de la señal modulada.">
-              <Info className="w-3 h-3" />
-            </span>
+          <Label className="text-xs font-medium text-tech-purple flex items-center gap-1">
+            <Radio className="w-3 h-3" />
+            Freq. Portadora: {config.carrierFreq} Hz
+            <Info className="w-3 h-3" />
           </Label>
-          <Slider
-            value={[config.carrierFreq]}
-            onValueChange={([value]) => updateConfig('carrierFreq', value)}
-            max={PARAM_LIMITS.carrierFreq.max}
-            min={PARAM_LIMITS.carrierFreq.min}
-            step={1000}
-            className="tech-slider"
-          />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{PARAM_LIMITS.carrierFreq.min / 1000} kHz</span>
-            <span>{PARAM_LIMITS.carrierFreq.max / 1000} kHz</span>
+          <div className="flex gap-2">
+            <Slider
+              value={[config.carrierFreq]}
+              onValueChange={([value]) => updateConfig('carrierFreq', value)}
+              max={PARAM_LIMITS.carrierFreq.max}
+              min={PARAM_LIMITS.carrierFreq.min}
+              step={1000}
+              className="flex-1"
+            />
+            <Input
+              type="number"
+              value={config.carrierFreq}
+              onChange={(e) => handleInputChange('carrierFreq', e.target.value)}
+              className="w-20 text-xs"
+              min={PARAM_LIMITS.carrierFreq.min}
+              max={PARAM_LIMITS.carrierFreq.max}
+            />
           </div>
           {errors.carrierFreq && <div className="text-xs text-red-500">{errors.carrierFreq}</div>}
         </div>
 
         {/* Carrier Amplitude */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium text-tech-orange flex items-center gap-1">
-            <Zap className="w-4 h-4 inline mr-1" />
-            Amplitud Portadora: {config.carrierAmplitude}V
-            <span title="Amplitud máxima de la portadora. Influye en la potencia de la señal.">
-              <Info className="w-3 h-3" />
-            </span>
+          <Label className="text-xs font-medium text-tech-orange flex items-center gap-1">
+            <Zap className="w-3 h-3" />
+            Amplitud: {config.carrierAmplitude}V
+            <Info className="w-3 h-3" />
           </Label>
-          <Slider
-            value={[config.carrierAmplitude]}
-            onValueChange={([value]) => updateConfig('carrierAmplitude', value)}
-            max={PARAM_LIMITS.carrierAmplitude.max}
-            min={PARAM_LIMITS.carrierAmplitude.min}
-            step={0.1}
-            className="tech-slider"
-          />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{PARAM_LIMITS.carrierAmplitude.min}V</span>
-            <span>{PARAM_LIMITS.carrierAmplitude.max}V</span>
+          <div className="flex gap-2">
+            <Slider
+              value={[config.carrierAmplitude]}
+              onValueChange={([value]) => updateConfig('carrierAmplitude', value)}
+              max={PARAM_LIMITS.carrierAmplitude.max}
+              min={PARAM_LIMITS.carrierAmplitude.min}
+              step={0.1}
+              className="flex-1"
+            />
+            <Input
+              type="number"
+              value={config.carrierAmplitude}
+              onChange={(e) => handleInputChange('carrierAmplitude', e.target.value)}
+              className="w-16 text-xs"
+              min={PARAM_LIMITS.carrierAmplitude.min}
+              max={PARAM_LIMITS.carrierAmplitude.max}
+              step={0.1}
+            />
           </div>
           {errors.carrierAmplitude && <div className="text-xs text-red-500">{errors.carrierAmplitude}</div>}
         </div>
@@ -227,41 +235,43 @@ export const ConfigPanel = ({ config, onConfigChange }: ConfigPanelProps) => {
         <Separator className="bg-border" />
 
         {/* Noise Control */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex items-center space-x-2">
             <Switch
               id="noise-enabled"
               checked={config.noiseEnabled}
               onCheckedChange={(checked) => updateConfig('noiseEnabled', checked)}
             />
-            <Label htmlFor="noise-enabled" className="text-sm font-medium flex items-center gap-1">
-              <Volume2 className="w-4 h-4 inline mr-1" />
+            <Label htmlFor="noise-enabled" className="text-xs font-medium flex items-center gap-1">
+              <Volume2 className="w-3 h-3" />
               Ruido Gaussiano
-              <span title="Activa la simulación de ruido en el canal. El SNR controla la relación señal-ruido.">
-                <Info className="w-3 h-3" />
-              </span>
+              <Info className="w-3 h-3" />
             </Label>
           </div>
 
           {config.noiseEnabled && (
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-destructive flex items-center gap-1">
+              <Label className="text-xs font-medium text-destructive flex items-center gap-1">
                 SNR: {config.snrDb} dB
-                <span title="Signal-to-Noise Ratio. A mayor SNR, menor ruido.">
-                  <Info className="w-3 h-3" />
-                </span>
+                <Info className="w-3 h-3" />
               </Label>
-              <Slider
-                value={[config.snrDb]}
-                onValueChange={([value]) => updateConfig('snrDb', value)}
-                max={PARAM_LIMITS.snrDb.max}
-                min={PARAM_LIMITS.snrDb.min}
-                step={1}
-                className="tech-slider"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{PARAM_LIMITS.snrDb.min} dB</span>
-                <span>{PARAM_LIMITS.snrDb.max} dB</span>
+              <div className="flex gap-2">
+                <Slider
+                  value={[config.snrDb]}
+                  onValueChange={([value]) => updateConfig('snrDb', value)}
+                  max={PARAM_LIMITS.snrDb.max}
+                  min={PARAM_LIMITS.snrDb.min}
+                  step={1}
+                  className="flex-1"
+                />
+                <Input
+                  type="number"
+                  value={config.snrDb}
+                  onChange={(e) => handleInputChange('snrDb', e.target.value)}
+                  className="w-16 text-xs"
+                  min={PARAM_LIMITS.snrDb.min}
+                  max={PARAM_LIMITS.snrDb.max}
+                />
               </div>
               {errors.snrDb && <div className="text-xs text-red-500">{errors.snrDb}</div>}
             </div>
@@ -272,41 +282,44 @@ export const ConfigPanel = ({ config, onConfigChange }: ConfigPanelProps) => {
 
         {/* Data Length */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium flex items-center gap-1">
-            Longitud de Datos: {config.dataLength} bits
-            <span title="Cantidad de bits a simular. Para QPSK debe ser par.">
-              <Info className="w-3 h-3" />
-            </span>
+          <Label className="text-xs font-medium flex items-center gap-1">
+            Longitud: {config.dataLength} bits
+            <Info className="w-3 h-3" />
           </Label>
-          <Slider
-            value={[config.dataLength]}
-            onValueChange={([value]) => updateConfig('dataLength', value)}
-            max={PARAM_LIMITS.dataLength.max}
-            min={PARAM_LIMITS.dataLength.min}
-            step={1}
-            className="tech-slider"
-          />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{PARAM_LIMITS.dataLength.min} bits</span>
-            <span>{PARAM_LIMITS.dataLength.max} bits</span>
+          <div className="flex gap-2">
+            <Slider
+              value={[config.dataLength]}
+              onValueChange={([value]) => updateConfig('dataLength', value)}
+              max={PARAM_LIMITS.dataLength.max}
+              min={PARAM_LIMITS.dataLength.min}
+              step={1}
+              className="flex-1"
+            />
+            <Input
+              type="number"
+              value={config.dataLength}
+              onChange={(e) => handleInputChange('dataLength', e.target.value)}
+              className="w-16 text-xs"
+              min={PARAM_LIMITS.dataLength.min}
+              max={PARAM_LIMITS.dataLength.max}
+            />
           </div>
           {errors.dataLength && <div className="text-xs text-red-500">{errors.dataLength}</div>}
         </div>
 
         <Separator className="bg-border" />
-        {/* Fuente de bits: random o custom */}
+
+        {/* Fuente de bits */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium flex items-center gap-1">
+          <Label className="text-xs font-medium flex items-center gap-1">
             Secuencia de bits
-            <span title="Elige si la secuencia de bits es aleatoria o personalizada.">
-              <Info className="w-3 h-3" />
-            </span>
+            <Info className="w-3 h-3" />
           </Label>
           <Select
             value={config.bitSource || 'random'}
             onValueChange={(value) => updateConfig('bitSource', value)}
           >
-            <SelectTrigger className="bg-input border-border">
+            <SelectTrigger className="bg-input border-border text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -316,15 +329,17 @@ export const ConfigPanel = ({ config, onConfigChange }: ConfigPanelProps) => {
           </Select>
           {((config.bitSource || 'random') === 'custom') && (
             <div className="mt-2">
-              <Label className="text-xs font-medium">Ingresa la secuencia de bits (0 y 1):</Label>
-              <input
+              <Label className="text-xs font-medium">Secuencia (0 y 1):</Label>
+              <Input
                 type="text"
                 value={customBits}
-                onChange={e => updateConfig('customBits', e.target.value.replace(/[^01]/g, ''))}
+                onChange={e => {
+                  const value = e.target.value.replace(/[^01]/g, '');
+                  updateConfig('customBits', value);
+                }}
                 maxLength={PARAM_LIMITS.dataLength.max}
-                className="w-full border rounded px-2 py-1 text-sm font-mono"
+                className="font-mono text-xs"
                 placeholder="Ej: 1011001"
-                aria-label="Secuencia personalizada de bits"
               />
               {errors.customBits && <div className="text-xs text-red-500">{errors.customBits}</div>}
               <div className="text-xs text-muted-foreground mt-1">Longitud: {customBits.length} bits</div>

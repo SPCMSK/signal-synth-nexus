@@ -27,7 +27,9 @@ const Index = () => {
     carrierAmplitude: 1,
     snrDb: 10,
     noiseEnabled: false,
-    dataLength: 4
+    dataLength: 4,
+    bitSource: 'random' as 'random' | 'custom',
+    customBits: '1010'
   });
 
   // Estados de control de simulación y paneles
@@ -118,7 +120,7 @@ const Index = () => {
               <CircuitBoard className="w-3 h-3 mr-1" />
               SNR: {config.snrDb} dB
             </Badge>
-            {totalSimulations > 0 && (
+            {totalSimulations > 0 und (
               <Badge variant="outline" className="border-tech-orange text-tech-orange" title="Simulaciones realizadas">
                 <History className="w-3 h-3 mr-1" />
                 {totalSimulations} simulaciones
@@ -159,30 +161,36 @@ const Index = () => {
             </Button>
           </div>
         </div>
+
         {/* Mensaje de advertencia didáctica */}
         {showConfigWarning && (
           <div className="my-2 p-3 rounded bg-yellow-100 text-yellow-800 border border-yellow-300 text-sm" role="alert">
             <strong>Advertencia:</strong> La configuración actual puede no ser robusta para una simulación educativa óptima. Se recomienda usar al menos 8 bits y SNR &gt; 7 dB para observar resultados representativos.
           </div>
         )}
+
         {/* Panel de documentación */}
         {showDocumentation && (
           <DocumentationPanel onClose={() => setShowDocumentation(false)} />
         )}
 
-        {/* Panel de configuración */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-          {/* Configuration Panel */}
-          <div className="xl:col-span-3">
+        {/* Layout mejorado con mejor distribución */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+          {/* Configuration Panel - Movido más a la derecha */}
+          <div className="xl:col-span-2">
             <ConfigPanel config={config} onConfigChange={handleConfigChange} />
           </div>
-          {/* Visualization Area */}
-          <div className="xl:col-span-6 space-y-6">
+          
+          {/* Visualization Area - Expandido */}
+          <div className="xl:col-span-8 space-y-6">
             <SignalVisualization
               digitalSignal={digitalSignal}
               modulatedSignal={modulatedSignal}
               demodulatedSignal={demodulatedSignal}
               isProcessing={isProcessing}
+              showCarrier={true}
+              carrierFreq={config.carrierFreq}
+              carrierAmplitude={config.carrierAmplitude}
             />
             <ConstellationDiagram
               data={constellationData}
@@ -190,8 +198,9 @@ const Index = () => {
               noiseEnabled={config.noiseEnabled}
             />
           </div>
-          {/* Metrics and Export Panel */}
-          <div className="xl:col-span-3 space-y-6">
+          
+          {/* Metrics and Export Panel - Movido más a la izquierda */}
+          <div className="xl:col-span-2 space-y-6">
             <MetricsPanel
               ber={ber}
               config={config}
