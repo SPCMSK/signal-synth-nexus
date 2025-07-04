@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Download, FileText, Image, Calendar, Upload, History, BarChart3 } from 'lucide-react';
+import { Download, FileText, Image, Upload, History, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 
@@ -297,33 +297,6 @@ SimuMod Pro - Simulador Avanzado de Modulación Digital
     }
   };
 
-  const handleScheduleDemo = () => {
-    const subject = encodeURIComponent('Solicitud de Demostración - Simulador de Modulación');
-    const body = encodeURIComponent(`
-Estimado/a Profesor/a,
-
-Me gustaría agendar una demostración del simulador de modulación digital.
-
-Configuración actual:
-- Modulación: ${currentSimulation.config.modulationType}
-- Bit Rate: ${currentSimulation.config.bitRate} bps
-- Frecuencia: ${currentSimulation.config.carrierFreq} Hz
-- BER obtenido: ${currentSimulation.ber ? currentSimulation.ber.value.toExponential(3) : 'N/A'}
-- Simulaciones realizadas: ${simulationHistory.length + 1}
-
-Quedo atento/a a su respuesta.
-
-Saludos cordiales.
-    `);
-    
-    window.open(`mailto:?subject=${subject}&body=${body}`);
-    
-    toast({
-      title: "Demo Programada",
-      description: "Cliente de correo abierto para enviar solicitud",
-    });
-  };
-
   const handleUploadReport = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -443,23 +416,6 @@ Saludos cordiales.
           >
             <Upload className="w-4 h-4 mr-2" />
             Subir Archivo
-          </Button>
-        </div>
-
-        <Separator />
-
-        {/* Schedule Demo */}
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-tech-cyan">Demostración</h4>
-          <Button
-            variant="outline"
-            onClick={handleScheduleDemo}
-            className="w-full border-tech-cyan text-tech-cyan hover:bg-tech-cyan/10"
-            aria-label="Agendar demostración con profesor"
-            title="Abre tu cliente de correo para solicitar una demo personalizada al profesor."
-          >
-            <Calendar className="w-4 h-4 mr-2" />
-            Agendar con Profesor
           </Button>
         </div>
 
